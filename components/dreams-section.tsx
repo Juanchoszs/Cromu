@@ -62,7 +62,10 @@ export default function DreamsSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.7 }}
           >
-            <Button className="bg-[#50A58D] hover:bg-[#408c77] text-white px-8 py-2 h-12 text-base">
+            <Button
+              className="bg-[#50A58D] hover:bg-[#408c77] text-white px-8 py-2 h-12 text-base"
+              onClick={() => window.location.href = "/servicios"}
+            >
               {language === "es" ? "Comienza hoy" : "Start today"}
             </Button>
           </motion.div>

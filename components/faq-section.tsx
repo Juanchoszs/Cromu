@@ -34,7 +34,7 @@ export default function FaqSection() {
         {
           question: "¿Cuál es el monto mínimo para abrir una cuenta?",
           answer:
-            "El monto minimo para abrir una cuenta de ahorros es de 20.000 pesos colombianos todo esto para que puedas empezar en tu ahorro de forma anual. ",
+            "El monto minimo para abrir una cuenta de ahorros es de 50.000 pesos colombianos todo esto para que puedas empezar en tu ahorro de forma anual. ",
         },
       ],
     },
@@ -64,7 +64,7 @@ export default function FaqSection() {
         {
           question: "What is the minimum amount to open an account?",
           answer:
-            "The minimum amount to open a savings account is 20,000 Colombian pesos, so you can start saving annually.",
+            "The minimum amount to open a savings account is 50,000 Colombian pesos, so you can start saving annually.",
         },
       ],
     },

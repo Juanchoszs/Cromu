@@ -287,6 +287,7 @@ export function Header() {
                 <span>{language === "es" ? "CONTÁCTENOS" : "CONTACT"}</span>
                 <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gray-200 transition-all duration-300 group-hover:w-full"></span>
               </Link>
+            
             </nav>
             <div className="flex items-center space-x-2">
               <Button
@@ -441,6 +442,9 @@ export function Header() {
                   >
                     {language === "es" ? "Contacto" : "Contact"}
                   </Link>
+
+            
+
                 </nav>
               </motion.div>
             )}

@@ -70,8 +70,8 @@ const CardsBelieve = () => {
         es: "Seguridad" 
       }),
       description: t({ 
-        en: "Your money will be securely backed in this savings fund without management fees", 
-        es: "Tu dinero estará respaldado de forma segura en este fondo de ahorros sin cuotas de manejo" 
+        en: "Your money is safely backed by years of experience in the financial market with no management fee.", 
+        es: "Tu dinero estará respaldado de forma segura por años de experiencia en el mercado financiero sin cuota de manejo" 
       }),
       icon: <Shield size={40} strokeWidth={1.5} />
     },
@@ -81,8 +81,8 @@ const CardsBelieve = () => {
         es: "Buena Rentabilidad" 
       }),
       description: t({ 
-        en: "6% annual profitability and an additional 1% for meeting your savings goals", 
-        es: "Rentabilidad de 6% anual y otro 1% adicional por cumplimiento de tus ahorros" 
+        en: "6% annual return and another 1% additional for compliance with your savings", 
+        es: "Rentabilidad de 6% anual y otro 1% adicional por cumplimiento en  tus ahorros" 
       }),
       icon: <TrendingUp size={40} strokeWidth={1.5} />
     },
@@ -92,8 +92,8 @@ const CardsBelieve = () => {
         es: "Bajas Tasas" 
       }),
       description: t({ 
-        en: "We provide a low monthly interest rate, being one of the lowest", 
-        es: "Proporcionamos una baja tasa de interés mensual siendo una de las más bajas" 
+        en: "We provide a low monthly interest rate, being the lowest in the market.", 
+        es: "Proporcionamos una baja tasa de interés mensual siendo las más bajas del mercado" 
       }),
       icon: <Percent size={40} strokeWidth={1.5} />
     }

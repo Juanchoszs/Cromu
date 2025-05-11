@@ -47,7 +47,7 @@ export default function ServicesMain() {
         content: [
           {
             id: 1,
-            title: "Fondo de Ahorros Premium",
+            title: "Ahorros Premium",
             description: "Maximiza tus ahorros con nuestra opción premium que ofrece excelentes tasas de rentabilidad para tu futuro financiero.",
             paragraph2: "Disfruta de un servicio sin cuota de manejo y con retiros programados cuando lo necesites.",
             features: [
@@ -159,7 +159,7 @@ export default function ServicesMain() {
         content: [
           {
             id: 1,
-            title: "Premium Savings Fund",
+            title: "Premium Savings ",
             description: "Maximize your savings with our premium option offering excellent return rates and additional benefits for your financial future.",
             paragraph2: "No management fees and flexible scheduled withdrawals for your economic peace of mind.",
             features: [
