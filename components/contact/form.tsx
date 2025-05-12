@@ -35,7 +35,7 @@ const translations = {
     rightColumnConfidentiality: "Tus consultas serán atendidas con total confidencialidad y transparencia, el respeto a tu privacidad es un valor esencial de la entidad.",
     phone1: "+57 314 2556085",
     phone2: "+57 310 2223491",
-    contactEmail: "atencioncliente@cromu.com",
+    contactEmail: "atencionclientecromu@gmail.com",
     faqTitle: "Preguntas Frecuentes",
     faq1: "¿Cuál es el tiempo de respuesta?",
     faq1Answer: "Nos comprometemos a responder todas las consultas en un plazo máximo de 48 horas hábiles. Para casos urgentes, recomendamos utilizar nuestro número telefónico de atención inmediata.",
@@ -293,7 +293,7 @@ export function ContactFormComponent() {
                           value={formData.email}
                           onChange={handleInputChange}
                           placeholder={t(translations, "emailPlaceholder")}
-                          className="w-full px-4 py-2.5 rounded-md border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#2a7d5a] dark:bg-gray-800 dark:text-white transition-all duration-200"
+                          className="w-full px-4 py-2.5 rounded-md border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-[#2a7d5a] bg-white text-black dark:bg-gray-800 dark:text-white transition-all duration-200"
                         />
                       </motion.div>
                     </div>

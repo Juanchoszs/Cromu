@@ -43,7 +43,7 @@ export function Footer() {
         address: "Villa del Rìo",
         phone: "+57 314 2556085 ",
         phone2: "+57 310 2223491",
-        email: "atencioncliente@cromu.com",
+        email: "atencionclientecromu@gmail.com",
       },
       copyright: "© 2023 CROMU. Todos los derechos reservados.",
     },
