@@ -127,6 +127,7 @@ export function Header() {
       { name: "Crédito express", href: "/servicios?tab=prestamos" },
       { name: "Ahorrador", href: "/servicios?tab=ahorros" },
       { name: "Adelanta tu prima", href: "/servicios?tab=adelantoPrima" },
+      
     ],
     en: [
       { name: "Debt Purchase", href: "/servicios?tab=cartera" },
@@ -162,6 +163,8 @@ export function Header() {
       about: "/nosotros"
     }
   }
+
+  
 
   if (!mounted) {
     return null
@@ -287,7 +290,13 @@ export function Header() {
                 <span>{language === "es" ? "CONTÁCTENOS" : "CONTACT"}</span>
                 <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gray-200 transition-all duration-300 group-hover:w-full"></span>
               </Link>
-            
+              <Link 
+                href="/espacio" 
+                className="relative text-white group transition-transform duration-300 hover:scale-105"
+              >
+                <span>{language === "es" ? "MI ESPACIO" : "MY SPACE"}</span>
+                <span className="absolute left-0 bottom-0 w-0 h-0.5 bg-gray-200 transition-all duration-300 group-hover:w-full"></span>
+              </Link>
             </nav>
             <div className="flex items-center space-x-2">
               <Button
