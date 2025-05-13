@@ -16,21 +16,43 @@ export async function POST(req: Request) {
     const { cedula, password } = body;
 
     if (!cedula || !password) {
-      return NextResponse.json({ error: "Todos los campos son obligatorios." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Todos los campos son obligatorios." },
+        { status: 400 }
+      );
     }
 
+    // Validación manual para administrador
+    if (cedula === "CromuAdmin" && password === "CromuAdministracion#") {
+      return NextResponse.json(
+        { message: "Inicio de sesión exitoso.", isAdmin: true },
+        { status: 200 }
+      );
+    }
+
+    // Validación para usuarios normales desde la base de datos
     const result = await pool.query("SELECT * FROM usuarios WHERE cedula = $1", [cedula]);
     if (result.rows.length === 0) {
-      return NextResponse.json({ error: "Cédula o contraseña incorrecta." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Cédula o contraseña incorrecta." },
+        { status: 400 }
+      );
     }
 
     const user = result.rows[0];
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      return NextResponse.json({ error: "Cédula o contraseña incorrecta." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Cédula o contraseña incorrecta." },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ message: "Inicio de sesión exitoso.", "isAdmin": true }, { status: 200 });
+    // Usuario normal
+    return NextResponse.json(
+      { message: "Inicio de sesión exitoso.", isAdmin: false },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error en el servidor:", error);
     return NextResponse.json(
