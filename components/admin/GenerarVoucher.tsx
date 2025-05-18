@@ -26,22 +26,13 @@ const calcularRentabilidadAnual = (ahorrador: Ahorrador) => {
 };
 
 // Calcula interés compuesto mensual y saldo total
-function calcularInteresYSaldoCompuesto(ahorrador: Ahorrador) {
+function calcularInteresYSaldoSimple(ahorrador: Ahorrador) {
   const tasaAnual = 6 + (ahorrador.incentivoPorFidelidad ? 1 : 0); // 6% o 7%
-  const tasaMensual = tasaAnual / 12 / 100;
-  let interesTotal = 0;
-  let saldoAcumulado = 0;
-  const mesesOrdenados = Object.keys(ahorrador.historialPagos).sort();
-  for (const mes of mesesOrdenados) {
-    const pago = ahorrador.historialPagos[mes];
-    if (pago.pagado) {
-      const interesMes = saldoAcumulado * tasaMensual;
-      interesTotal += interesMes;
-      saldoAcumulado += pago.monto + interesMes;
-    }
-  }
+  const interesTotal = ahorrador.ahorroTotal * (tasaAnual / 100);
+  const saldoAcumulado = ahorrador.ahorroTotal + interesTotal;
   return { interesTotal, saldoAcumulado };
 }
+
 
 // Función para obtener datos para el gráfico
 const obtenerDatosGrafico = (ahorrador: Ahorrador) => {
@@ -95,7 +86,7 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
   });
   
   const rentabilidadAnual = calcularRentabilidadAnual(ahorrador);
-  const { interesTotal, saldoAcumulado } = calcularInteresYSaldoCompuesto(ahorrador);
+  const { interesTotal, saldoAcumulado } = calcularInteresYSaldoSimple(ahorrador);
   
   // Referencias para los gráficos y contenedor del PDF
   const graficoAhorroRef = useRef<HTMLCanvasElement>(null);
