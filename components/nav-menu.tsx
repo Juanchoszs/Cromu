@@ -164,6 +164,13 @@ export default function NavMenu() {
         </span>
       </Link>
 
+      {/* Mi Espacio */}
+      <Link href="/espacio" className="text-sm font-medium text-white relative group transition-transform hover:scale-105">
+        <span className="relative">
+          {language === "es" ? "MI ESPACIO" : "MY SPACE"}
+          <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
+        </span>
+      </Link>
     </nav>
   );
 }

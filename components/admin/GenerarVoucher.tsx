@@ -25,29 +25,23 @@ const calcularRentabilidadAnual = (ahorrador: Ahorrador) => {
   return tasaBase + tasaFidelidad;
 };
 
-const calcularInteresGenerado = (ahorrador: Ahorrador) => {
-  const tasaAnual = calcularRentabilidadAnual(ahorrador);
+// Calcula interés compuesto mensual y saldo total
+function calcularInteresYSaldoCompuesto(ahorrador: Ahorrador) {
+  const tasaAnual = 6 + (ahorrador.incentivoPorFidelidad ? 1 : 0); // 6% o 7%
   const tasaMensual = tasaAnual / 12 / 100;
-  
   let interesTotal = 0;
-  const mesesOrdenados = Object.keys(ahorrador.historialPagos).sort();
-  
-  // Calcular interés compuesto para cada mes
   let saldoAcumulado = 0;
+  const mesesOrdenados = Object.keys(ahorrador.historialPagos).sort();
   for (const mes of mesesOrdenados) {
     const pago = ahorrador.historialPagos[mes];
     if (pago.pagado) {
-      // Agregar interés del saldo anterior
       const interesMes = saldoAcumulado * tasaMensual;
       interesTotal += interesMes;
-      
-      // Agregar el nuevo pago al saldo
       saldoAcumulado += pago.monto + interesMes;
     }
   }
-  
-  return interesTotal;
-};
+  return { interesTotal, saldoAcumulado };
+}
 
 // Función para obtener datos para el gráfico
 const obtenerDatosGrafico = (ahorrador: Ahorrador) => {
@@ -101,7 +95,7 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
   });
   
   const rentabilidadAnual = calcularRentabilidadAnual(ahorrador);
-  const interesGenerado = calcularInteresGenerado(ahorrador);
+  const { interesTotal, saldoAcumulado } = calcularInteresYSaldoCompuesto(ahorrador);
   
   // Referencias para los gráficos y contenedor del PDF
   const graficoAhorroRef = useRef<HTMLCanvasElement>(null);
@@ -485,16 +479,12 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
                     <p className="font-bold text-xl text-emerald-700">{formatearMoneda(ahorrador.ahorroTotal)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-800 font-medium">Pagos Consecutivos:</p>
-                    <p className="font-semibold text-gray-900">{ahorrador.pagosConsecutivos} meses</p>
+                    <p className="text-sm text-gray-800 font-medium">Interés Anual:</p>
+                    <p className="font-bold text-emerald-700">{formatearMoneda(interesTotal)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-800 font-medium">Tasa de Rentabilidad:</p>
-                    <p className="font-semibold text-gray-900">{rentabilidadAnual}% anual</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Interés Generado:</p>
-                    <p className="font-semibold text-emerald-700">{formatearMoneda(interesGenerado)}</p>
+                    <p className="text-sm text-gray-800 font-medium">Saldo Total:</p>
+                    <p className="font-bold text-emerald-700">{formatearMoneda(saldoAcumulado)}</p>
                   </div>
                 </div>
               </div>

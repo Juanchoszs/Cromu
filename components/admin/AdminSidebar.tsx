@@ -13,8 +13,6 @@ export default function AdminSidebar({
   const router = useRouter();
 
   const handleLogout = () => {
-    // Aquí podrías agregar lógica adicional de cierre de sesión si es necesario
-    // Por ejemplo, limpiar tokens, cookies, etc.
     router.push('/');
   };
 
@@ -56,8 +54,6 @@ export default function AdminSidebar({
       >
         <Calculator className="w-6 h-6" /> Simulador
       </button>
-      
-      {/* Botón de cierre de sesión */}
       <div className="mt-auto">
         <button
           className="flex items-center gap-3 p-2 rounded text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-colors w-full"
@@ -79,8 +75,8 @@ export default function AdminSidebar({
       >
         <Menu className="w-7 h-7" />
       </button>
-      {/* Sidebar en desktop */}
-      <aside className="hidden md:flex w-64 bg-gray-800 shadow-lg h-screen">
+      {/* Sidebar fijo en desktop */}
+      <aside className="hidden md:flex fixed top-0 left-0 w-64 h-screen bg-gray-800 shadow-lg z-30">
         {menu}
       </aside>
       {/* Sidebar hamburguesa en móvil */}

@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState } from "react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHome from "@/components/admin/AdminHome";
@@ -26,9 +25,9 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-900">
+    <div className="min-h-screen bg-gray-900">
       <AdminSidebar section={section} setSection={setSection} />
-      <main className="flex-1 p-6 overflow-y-auto">{content}</main>
+      <main className="md:ml-64 p-6 min-h-screen">{content}</main>
     </div>
   );
 }

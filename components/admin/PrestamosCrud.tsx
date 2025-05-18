@@ -96,7 +96,7 @@ export default function PrestamosCrud() {
       </button>
       {mostrarFormulario && (
         <form
-          className="bg-white dark:bg-gray-800 p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+          className="bg-gray-800 p-4 rounded shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
           onSubmit={handleSubmit}
         >
           <input
@@ -201,7 +201,7 @@ export default function PrestamosCrud() {
         {prestamos.map(prestamo => (
           <div
             key={prestamo.id}
-            className="bg-blue-100 dark:bg-blue-900 p-4 rounded shadow flex flex-col gap-2 border border-blue-300 dark:border-blue-700"
+            className="bg-blue-900 p-4 rounded shadow flex flex-col gap-2 border border-blue-700"
           >
             <div className="flex justify-between items-center">
               <span className="font-bold text-lg">{prestamo.nombreDeudor}</span>
@@ -217,7 +217,7 @@ export default function PrestamosCrud() {
                 {prestamo.estado}
               </span>
             </div>
-            <div className="text-xs text-gray-700 dark:text-gray-200">
+            <div className="text-xs text-gray-200">
               <p>Cédula: {prestamo.cedula}</p>
               <p>Teléfono: {prestamo.telefono}</p>
               <p>Dirección: {prestamo.direccion}</p>
@@ -226,7 +226,7 @@ export default function PrestamosCrud() {
               <p>Tasa interés: {prestamo.tasaInteres}% mensual</p>
               <p>Fecha desembolso: {prestamo.fechaDesembolso}</p>
               {prestamo.observaciones && (
-                <p className="italic text-gray-500 dark:text-gray-300">Obs: {prestamo.observaciones}</p>
+                <p className="italic text-gray-300">Obs: {prestamo.observaciones}</p>
               )}
             </div>
             <div className="flex gap-2 mt-2">

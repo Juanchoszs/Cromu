@@ -210,6 +210,15 @@ export default function MobileMenu() {
               >
                 {language === "es" ? "CONTÁCTENOS" : "CONTACT"}
               </Link>
+
+              {/* Mi Espacio */}
+              <Link
+                href="/espacio"
+                className="text-white font-medium py-2 px-4 rounded-md hover:bg-emerald-700 transition-all transform hover:scale-105"
+                onClick={() => setIsOpen(false)}
+              >
+                {language === "es" ? "MI ESPACIO" : "MY SPACE"}
+              </Link>
             </div>
           </motion.div>
         )}

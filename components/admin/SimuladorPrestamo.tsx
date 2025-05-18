@@ -123,20 +123,20 @@ export default function SimuladorPrestamo() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gray-50 dark:bg-gray-900 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-bold mb-8 text-center text-gray-800 dark:text-white">
+    <div className="max-w-6xl mx-auto p-6 bg-gray-900 rounded-lg shadow-lg">
+      <h2 className="text-3xl font-bold mb-8 text-center text-white">
         Simulador de Préstamos
       </h2>
       
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+      <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+        <h3 className="text-xl font-semibold mb-4 text-gray-200">
           Parámetros del Préstamo
         </h3>
         
         <form onSubmit={handleCalcular}>
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Monto del préstamo
               </label>
               <div className="mb-3">
@@ -148,7 +148,7 @@ export default function SimuladorPrestamo() {
                       className={`px-3 py-1 text-sm rounded-full transition-colors ${
                         !montoPersonalizado && monto === opcion.valor.toString()
                           ? "bg-emerald-600 text-white"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-emerald-500 hover:text-white"
+                          : "bg-gray-700 text-gray-200 hover:bg-emerald-500 hover:text-white"
                       }`}
                       onClick={() => seleccionarMontoPreconfigurado(opcion.valor)}
                     >
@@ -158,9 +158,9 @@ export default function SimuladorPrestamo() {
                 </div>
               </div>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-600 dark:text-gray-400">$</span>
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">$</span>
                 <input
-                  className="w-full pl-8 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
+                  className="w-full pl-8 p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
                   placeholder="Ingrese monto"
                   value={monto}
                   onChange={handleChangeMontoInput}
@@ -172,11 +172,11 @@ export default function SimuladorPrestamo() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Tasa de interés mensual (%)
               </label>
               <input
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
+                className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
                 placeholder="Ej: 1.5"
                 value={tasa}
                 onChange={(e) => setTasa(e.target.value)}
@@ -188,7 +188,7 @@ export default function SimuladorPrestamo() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Plazo (meses)
               </label>
               <div className="mb-3">
@@ -200,7 +200,7 @@ export default function SimuladorPrestamo() {
                       className={`px-3 py-1 text-sm rounded-full transition-colors ${
                         !plazoPersonalizado && plazo === opcion.valor.toString()
                           ? "bg-emerald-600 text-white"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-emerald-500 hover:text-white"
+                          : "bg-gray-700 text-gray-200 hover:bg-emerald-500 hover:text-white"
                       }`}
                       onClick={() => seleccionarPlazoPreconfigurado(opcion.valor)}
                     >
@@ -210,7 +210,7 @@ export default function SimuladorPrestamo() {
                 </div>
               </div>
               <input
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
+                className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors"
                 placeholder="Ingrese plazo"
                 value={plazo}
                 onChange={handleChangePlazoInput}
@@ -237,76 +237,76 @@ export default function SimuladorPrestamo() {
       
       {resultado && (
         <>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
-            <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+            <h3 className="text-xl font-semibold mb-4 text-gray-200">
               Resumen del Préstamo
             </h3>
             
             <div className="grid md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Capital solicitado</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{formatCurrency(resultado.resumen.totalCapital)}</p>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-400">Capital solicitado</p>
+                <p className="text-xl font-bold text-white">{formatCurrency(resultado.resumen.totalCapital)}</p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Cuota mensual</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{formatCurrency(resultado.resumen.cuotaMensual)}</p>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-400">Cuota mensual</p>
+                <p className="text-xl font-bold text-white">{formatCurrency(resultado.resumen.cuotaMensual)}</p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total intereses</p>
-                <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(resultado.resumen.totalInteres)}</p>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-400">Total intereses</p>
+                <p className="text-xl font-bold text-emerald-400">{formatCurrency(resultado.resumen.totalInteres)}</p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total a pagar</p>
-                <p className="text-xl font-bold text-gray-800 dark:text-white">{formatCurrency(resultado.resumen.totalPagado)}</p>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <p className="text-sm text-gray-400">Total a pagar</p>
+                <p className="text-xl font-bold text-white">{formatCurrency(resultado.resumen.totalPagado)}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <h3 className="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-md">
+            <h3 className="text-xl font-semibold mb-4 text-gray-200">
               Tabla de Amortización
             </h3>
             
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <table className="min-w-full bg-gray-800 divide-y divide-gray-700">
                 <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-700">
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <tr className="bg-gray-700">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Mes
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Cuota
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Interés
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Abono a Capital
                     </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                       Saldo
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-gray-700">
                   {filasPaginadas.map((fila: { mes: number; cuota: number; interes: number; abono: number; saldo: number }, idx: number) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white dark:bg-gray-800" : "bg-gray-50 dark:bg-gray-700"}>
-                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                    <tr key={idx} className={idx % 2 === 0 ? "bg-gray-800" : "bg-gray-700"}>
+                      <td className="py-3 px-4 text-sm text-gray-200">
                         {fila.mes}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                      <td className="py-3 px-4 text-sm text-gray-200">
                         {formatCurrency(fila.cuota)}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                      <td className="py-3 px-4 text-sm text-gray-200">
                         {formatCurrency(fila.interes)}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                      <td className="py-3 px-4 text-sm text-gray-200">
                         {formatCurrency(fila.abono)}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                      <td className="py-3 px-4 text-sm text-gray-200">
                         {formatCurrency(fila.saldo)}
                       </td>
                     </tr>
@@ -323,8 +323,8 @@ export default function SimuladorPrestamo() {
                     disabled={paginaActual === 1}
                     className={`px-3 py-1 rounded-md ${
                       paginaActual === 1
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
-                        : "bg-gray-200 text-gray-700 hover:bg-emerald-500 hover:text-white dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-600"
+                        ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                        : "bg-gray-700 text-gray-300 hover:bg-emerald-600"
                     }`}
                   >
                     Anterior
@@ -347,7 +347,7 @@ export default function SimuladorPrestamo() {
                               className={`px-3 py-1 rounded-md ${
                                 paginaActual === page
                                   ? "bg-emerald-600 text-white"
-                                  : "bg-gray-200 text-gray-700 hover:bg-emerald-500 hover:text-white dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-600"
+                                  : "bg-gray-700 text-gray-300 hover:bg-emerald-600"
                               }`}
                             >
                               {page}
@@ -362,7 +362,7 @@ export default function SimuladorPrestamo() {
                           className={`px-3 py-1 rounded-md ${
                             paginaActual === page
                               ? "bg-emerald-600 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-emerald-500 hover:text-white dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-600"
+                              : "bg-gray-700 text-gray-300 hover:bg-emerald-600"
                           }`}
                         >
                           {page}
@@ -375,8 +375,8 @@ export default function SimuladorPrestamo() {
                     disabled={paginaActual === totalPaginas}
                     className={`px-3 py-1 rounded-md ${
                       paginaActual === totalPaginas
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
-                        : "bg-gray-200 text-gray-700 hover:bg-emerald-500 hover:text-white dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-emerald-600"
+                        ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+                        : "bg-gray-700 text-gray-300 hover:bg-emerald-600"
                     }`}
                   >
                     Siguiente
