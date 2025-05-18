@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Calendar, Edit3, Trash2, CheckCircle, XCircle, DollarSign, ChevronDown, ChevronUp, Clock, Award, User, RefreshCw, Printer } from "lucide-react";
 import FormularioAhorrador from "./FormularioAhorrador";
 import GenerarVoucher from "./GenerarVoucher";
+import SuccessNotification from "./SuccessNotification";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Definición de la interfaz Ahorrador (exportada para usarla en FormularioAhorrador)
 export interface Ahorrador {
@@ -18,6 +20,32 @@ export interface Ahorrador {
   incentivoPorFidelidad: boolean;
 }
 
+// Variantes de animación
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.3 } }
+};
+
+const slideUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+};
+
+const slideRight = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.4 } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
 export default function AhorradoresCrud() {
   const [ahorradores, setAhorradores] = useState<Ahorrador[]>([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -27,6 +55,11 @@ export default function AhorradoresCrud() {
   const [mostrarInfoFidelidad, setMostrarInfoFidelidad] = useState(false);
   const [mostrarVoucher, setMostrarVoucher] = useState(false);
   const [ahorradorSeleccionado, setAhorradorSeleccionado] = useState<Ahorrador | null>(null);
+  
+  // Estados para la notificación de éxito
+  const [mostrarNotificacion, setMostrarNotificacion] = useState(false);
+  const [mensajeNotificacion, setMensajeNotificacion] = useState("");
+  const [ahorradorConNotificacion, setAhorradorConNotificacion] = useState<string | null>(null);
   
   // Cargar datos del localStorage al iniciar
   useEffect(() => {
@@ -172,9 +205,19 @@ export default function AhorradoresCrud() {
       const nuevosAhorradores = [...ahorradores];
       nuevosAhorradores[editandoIndex] = ahorradorCompleto;
       setAhorradores(nuevosAhorradores);
+      
+      // Mostrar notificación de éxito para edición
+      setMensajeNotificacion("Ahorrador actualizado exitosamente");
+      setAhorradorConNotificacion(ahorradorCompleto.id);
+      setMostrarNotificacion(true);
     } else {
       // Agregar nuevo
       setAhorradores([...ahorradores, ahorradorCompleto]);
+      
+      // Mostrar notificación de éxito para nuevo ahorrador
+      setMensajeNotificacion("Ahorrador agregado exitosamente");
+      setAhorradorConNotificacion(ahorradorCompleto.id);
+      setMostrarNotificacion(true);
     }
     
     setMostrarFormulario(false);
@@ -233,8 +276,29 @@ export default function AhorradoresCrud() {
     }).format(valor);
   };
 
+  // Calcular rentabilidad anual
+  const calcularRentabilidadAnual = (ahorrador: Ahorrador) => {
+    const tasaBase = 6; // 6% anual base
+    const tasaFidelidad = ahorrador.incentivoPorFidelidad ? 1 : 0; // 1% adicional por fidelidad
+    return tasaBase + tasaFidelidad;
+  };
+
+  // Calcular interés y saldo acumulado
+  const calcularInteresYSaldo = (ahorrador: Ahorrador) => {
+    const rentabilidadAnual = calcularRentabilidadAnual(ahorrador);
+    const interes = ahorrador.ahorroTotal * (rentabilidadAnual / 100);
+    const saldoTotal = ahorrador.ahorroTotal + interes;
+    return { interes, saldoTotal };
+  };
+
+  // Mostrar formulario para generar voucher
+  const mostrarGenerarVoucher = (ahorrador: Ahorrador) => {
+    setAhorradorSeleccionado(ahorrador);
+    setMostrarVoucher(true);
+  };
+
   // Filtrar ahorradores según búsqueda
-  const ahorradoresFiltrados = ahorradores.filter(ahorrador => {
+  const ahorradoresToShow = ahorradores.filter(ahorrador => {
     const terminoBusqueda = busqueda.toLowerCase();
     return (
       ahorrador.nombre.toLowerCase().includes(terminoBusqueda) ||
@@ -243,50 +307,36 @@ export default function AhorradoresCrud() {
     );
   });
 
-  // Calcular rentabilidad anual (6% base + 1% por fidelidad si aplica)
-  const calcularRentabilidadAnual = (ahorrador: Ahorrador) => {
-    const tasaBase = 6; // 6% anual base
-    const tasaFidelidad = ahorrador.incentivoPorFidelidad ? 1 : 0; // 1% adicional por fidelidad
-    return tasaBase + tasaFidelidad;
-  };
-
-  // Calcular interés anual (corregido para que sea el porcentaje completo del capital)
-  const calcularInteresAnual = (ahorrador: Ahorrador) => {
-    const tasaAnual = calcularRentabilidadAnual(ahorrador);
-    // Aplicar la tasa directamente al capital total
-    return ahorrador.ahorroTotal * (tasaAnual / 100);
-  };
-
-  // Calcular saldo total (capital + interés)
-  const calcularSaldoTotal = (ahorrador: Ahorrador) => {
-    const interesAnual = calcularInteresAnual(ahorrador);
-    return ahorrador.ahorroTotal + interesAnual;
-  };
-
-  // Función para mostrar el voucher
-  const mostrarGenerarVoucher = (ahorrador: Ahorrador) => {
-    setAhorradorSeleccionado(ahorrador);
-    setMostrarVoucher(true);
-  };
-
   return (
-    <div className="text-white">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-emerald-400">Gestión de Ahorradores</h2>
-        <button
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+      className="p-6 bg-gray-900 rounded-lg shadow-lg"
+    >
+      <motion.div 
+        variants={slideUp}
+        className="flex justify-between items-center mb-6"
+      >
+        <h1 className="text-2xl font-bold text-white">Gestión de Ahorradores</h1>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => {
             setMostrarFormulario(true);
             setEditandoIndex(null);
           }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center"
         >
           <User className="mr-2 h-5 w-5" />
           Nuevo Ahorrador
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
-      {/* Barra de búsqueda */}
-      <div className="mb-6">
+      <motion.div 
+        variants={slideUp}
+        className="mb-6"
+      >
         <div className="relative">
           <input
             type="text"
@@ -301,277 +351,276 @@ export default function AhorradoresCrud() {
             </svg>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Formulario de ahorrador */}
-      {mostrarFormulario && (
-        <FormularioAhorrador
-          ahorrador={editandoIndex !== null ? ahorradores[editandoIndex] : undefined}
-          onGuardar={guardarAhorrador}
-          onCancelar={() => {
-            setMostrarFormulario(false);
-            setEditandoIndex(null);
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {mostrarFormulario && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <FormularioAhorrador
+              ahorrador={editandoIndex !== null ? ahorradores[editandoIndex] : undefined}
+              onGuardar={guardarAhorrador}
+              onCancelar={() => {
+                setMostrarFormulario(false);
+                setEditandoIndex(null);
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Información sobre el bono de fidelidad */}
-      <div className="relative mb-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-start">
-          <Award className="text-emerald-400 h-6 w-6 mr-3 mt-1 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-emerald-400 mb-1">Bono por Fidelidad (1% adicional)</h3>
-            <p className="text-gray-300 text-sm">
-              Los ahorradores reciben un 6% de rentabilidad anual base. Todos los ahorradores comienzan con un 1% adicional (7% total) que se mantiene mientras no fallen ningún pago.
-            </p>
-            <button
-              onClick={() => setMostrarInfoFidelidad(!mostrarInfoFidelidad)}
-              className="text-emerald-400 hover:text-emerald-300 text-sm mt-1 underline"
-            >
-              {mostrarInfoFidelidad ? "Ocultar detalles" : "Ver más detalles"}
-            </button>
-            
-            {mostrarInfoFidelidad && (
-              <div className="mt-2 text-sm text-gray-300">
-                <p className="mb-1">• El bono del 1% se aplica automáticamente desde el primer aporte.</p>
-                <p className="mb-1">• Si el ahorrador falla un mes, el bono se desactiva temporalmente.</p>
-                <p className="mb-1">• Al corregir todos los meses fallidos, el bono se recupera automáticamente.</p>
-                <p>• El sistema gestiona automáticamente el estado del bono para todos los ahorradores.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de ahorradores */}
-      {ahorradoresFiltrados.length === 0 ? (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-          <p className="text-gray-400">
+      <motion.div 
+        variants={staggerContainer}
+        className="grid grid-cols-1 gap-6"
+      >
+        {ahorradoresToShow.length === 0 ? (
+          <motion.div 
+            variants={slideUp}
+            className="bg-gray-800 rounded-lg p-6 text-center text-gray-400"
+          >
             {busqueda ? "No se encontraron ahorradores que coincidan con la búsqueda." : "No hay ahorradores registrados. Agrega uno nuevo para comenzar."}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {ahorradoresFiltrados.map((ahorrador, index) => {
-            const mesesOrdenados = Object.keys(ahorrador.historialPagos).sort();
-            const interesAnual = calcularInteresAnual(ahorrador);
-            const saldoTotal = calcularSaldoTotal(ahorrador);
-            const tasaInteres = calcularRentabilidadAnual(ahorrador);
+          </motion.div>
+        ) : (
+          ahorradoresToShow.map((ahorrador, index) => {
+            const { interes, saldoTotal } = calcularInteresYSaldo(ahorrador);
+            const expandido = detallesExpandidos[ahorrador.id] || false;
             
             return (
-              <div 
-                key={ahorrador.id} 
-                className={`bg-gray-800 border rounded-lg overflow-hidden shadow-lg ${
-                  ahorrador.incentivoPorFidelidad ? 'border-emerald-600' : 'border-gray-700'
-                }`}
+              <motion.div
+                key={ahorrador.id}
+                variants={slideUp}
+                layout
+                className="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-lg relative"
               >
-                <div className="p-4 bg-gray-900">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white">{ahorrador.nombre}</h3>
-                      <div className="flex items-center mt-1 text-gray-400 text-sm">
-                        <span className="mr-3">Cédula: {ahorrador.cedula}</span>
+                {/* Notificación de éxito dentro de la tarjeta */}
+                {ahorradorConNotificacion === ahorrador.id && (
+                  <SuccessNotification
+                    message={mensajeNotificacion}
+                    visible={mostrarNotificacion}
+                    onClose={() => {
+                      setMostrarNotificacion(false);
+                      setAhorradorConNotificacion(null);
+                    }}
+                    position="card"
+                    variant="default"
+                  />
+                )}
+                
+                <div className="p-4 flex flex-col md:flex-row md:items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-2">
+                      <h2 className="text-xl font-semibold text-white">{ahorrador.nombre}</h2>
+                      {ahorrador.incentivoPorFidelidad && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                          className="ml-2 bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded-full text-xs flex items-center"
+                        >
+                          <Award className="h-3 w-3 mr-1" />
+                          Fidelidad
+                        </motion.div>
+                      )}
+                    </div>
+                    <div className="text-gray-400 text-sm mb-2">Cédula: {ahorrador.cedula}</div>
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="flex items-center text-emerald-400">
+                        <DollarSign className="h-4 w-4 mr-1" />
+                        <span>{formatearMoneda(ahorrador.ahorroTotal)}</span>
+                      </div>
+                      <div className="flex items-center text-blue-400">
+                        <Calendar className="h-4 w-4 mr-1" />
                         <span>Ingreso: {formatearFecha(ahorrador.fechaIngreso)}</span>
                       </div>
+                      <div className="flex items-center text-amber-400">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>{ahorrador.pagosConsecutivos} pagos consecutivos</span>
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => editarAhorrador(ahorradores.findIndex(a => a.id === ahorrador.id))}
-                        className="p-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
-                        title="Editar ahorrador"
-                      >
-                        <Edit3 size={18} />
-                      </button>
-                      <button
-                        onClick={() => eliminarAhorrador(ahorradores.findIndex(a => a.id === ahorrador.id))}
-                        className="p-2 bg-red-600 hover:bg-red-700 rounded-lg"
-                        title="Eliminar ahorrador"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => mostrarGenerarVoucher(ahorrador)}
-                        className="p-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg"
-                        title="Generar voucher"
-                      >
-                        <Printer size={18} />
-                      </button>
-                    </div>
+                  </div>
+                  <div className="flex mt-4 md:mt-0 space-x-2">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => editarAhorrador(index)}
+                      className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                    >
+                      <Edit3 className="h-5 w-5" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => eliminarAhorrador(index)}
+                      className="p-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => mostrarGenerarVoucher(ahorrador)}
+                      className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors"
+                    >
+                      <Printer className="h-5 w-5" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => alternarDetalles(ahorrador.id)}
+                      className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    >
+                      {expandido ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </motion.button>
                   </div>
                 </div>
                 
-                <div className="p-4 border-t border-gray-700">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="bg-gray-900 p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Ahorro Total:</span>
-                        <span className="text-xl font-semibold text-emerald-400">{formatearMoneda(ahorrador.ahorroTotal)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-900 p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Interés Anual:</span>
-                        <span className="text-xl font-semibold text-emerald-400">{formatearMoneda(interesAnual)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-900 p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Saldo Total:</span>
-                        <span className="text-xl font-semibold text-emerald-400">{formatearMoneda(saldoTotal)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="bg-gray-900 p-3 rounded-lg flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Clock className="text-gray-400 mr-2 h-5 w-5" />
-                        <span className="text-gray-400">Pagos Consecutivos:</span>
-                      </div>
-                      <span className="font-semibold">{ahorrador.pagosConsecutivos} {ahorrador.pagosConsecutivos === 1 ? 'mes' : 'meses'}</span>
-                    </div>
-                    
-                    <div className={`bg-gray-900 p-3 rounded-lg flex items-center justify-between ${
-                      ahorrador.incentivoPorFidelidad ? 'border border-emerald-600' : ''
-                    }`}>
-                      <div className="flex items-center">
-                        <Award className={`mr-2 h-5 w-5 ${
-                          ahorrador.incentivoPorFidelidad ? 'text-emerald-400' : 'text-gray-400'
-                        }`} />
-                        <span className="text-gray-400">Rentabilidad Anual:</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className={`font-semibold ${
-                          ahorrador.incentivoPorFidelidad ? 'text-emerald-400' : 'text-white'
-                        }`}>{tasaInteres}%</span>
-                        {ahorrador.incentivoPorFidelidad && (
-                          <span className="ml-2 text-xs bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded-full">
-                            +1% Fidelidad
-                          </span>
-                        )}
-                        {!ahorrador.incentivoPorFidelidad && (
-                          <div className="flex flex-col items-end">
-                            <span className="ml-2 text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded-full">
-                              Sin bono
-                            </span>
-                            <button 
-                              onClick={() => {
-                                // Marcar todos los meses como pagados para recuperar el incentivo
-                                const ahorradorActualizado = { ...ahorrador };
-                                for (const mes of Object.keys(ahorradorActualizado.historialPagos)) {
-                                  if (!ahorradorActualizado.historialPagos[mes].pagado) {
-                                    ahorradorActualizado.historialPagos[mes].pagado = true;
-                                    // Asignar un monto predeterminado si es 0
-                                    if (ahorradorActualizado.historialPagos[mes].monto === 0) {
-                                      // Buscar el último monto pagado
-                                      const mesesOrdenados = Object.keys(ahorradorActualizado.historialPagos).sort();
-                                      let ultimoMontoPagado = 100000; // Valor predeterminado
-                                      
-                                      for (const m of mesesOrdenados) {
-                                        if (m !== mes && ahorradorActualizado.historialPagos[m].pagado) {
-                                          ultimoMontoPagado = ahorradorActualizado.historialPagos[m].monto;
-                                          break;
-                                        }
-                                      }
-                                      
-                                      ahorradorActualizado.historialPagos[mes].monto = ultimoMontoPagado;
-                                    }
-                                  }
-                                }
-                                
-                                // Recalcular todo
-                                calcularPagosConsecutivos(ahorradorActualizado);
-                                recalcularAhorroTotal(ahorradorActualizado);
-                                
-                                // Actualizar lista de ahorradores
-                                const nuevosAhorradores = [...ahorradores];
-                                nuevosAhorradores[index] = ahorradorActualizado;
-                                setAhorradores(nuevosAhorradores);
-                              }}
-                              className="mt-1 text-xs text-emerald-400 hover:text-emerald-300 underline"
-                            >
-                              Recuperar bono
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button
-                    onClick={() => alternarDetalles(ahorrador.id)}
-                    className="w-full flex items-center justify-center p-2 bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <span className="mr-2">
-                      {detallesExpandidos[ahorrador.id] ? "Ocultar historial de pagos" : "Ver historial de pagos"}
-                    </span>
-                    {detallesExpandidos[ahorrador.id] ? (
-                      <ChevronUp size={18} />
-                    ) : (
-                      <ChevronDown size={18} />
-                    )}
-                  </button>
-                  
-                  {detallesExpandidos[ahorrador.id] && (
-                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {mesesOrdenados.map((mes) => (
-                        <div 
-                          key={mes} 
-                          className={`p-3 rounded-lg border ${
-                            ahorrador.historialPagos[mes].pagado ? 'bg-emerald-900/30 border-emerald-700' : 'bg-gray-900 border-gray-700'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-medium">{formatearMes(mes)}</span>
-                            <button
-                              onClick={() => alternarEstadoPago(index, mes)}
-                              className={`p-1 rounded-full ${
-                                ahorrador.historialPagos[mes].pagado ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-400'
-                              }`}
-                            >
-                              {ahorrador.historialPagos[mes].pagado ? (
-                                <CheckCircle size={20} />
-                              ) : (
-                                <XCircle size={20} />
-                              )}
-                            </button>
-                          </div>
-                          <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <DollarSign size={16} className="text-gray-500" />
+                <AnimatePresence>
+                  {expandido && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="border-t border-gray-700"
+                    >
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-gray-900 p-4 rounded-lg">
+                            <h3 className="text-lg font-medium text-white mb-2">Información de Contacto</h3>
+                            <div className="space-y-2 text-gray-300">
+                              <p><span className="text-gray-500">Email:</span> {ahorrador.email}</p>
+                              <p><span className="text-gray-500">Teléfono:</span> {ahorrador.telefono}</p>
+                              <p><span className="text-gray-500">Dirección:</span> {ahorrador.direccion}</p>
                             </div>
-                            <input
-                              type="number"
-                              value={ahorrador.historialPagos[mes].monto || 0}
-                              onChange={(e) => actualizarMontoMes(index, mes, parseInt(e.target.value) || 0)}
-                              className={`w-full p-2 pl-10 bg-gray-900 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                                ahorrador.historialPagos[mes].pagado ? 'border-emerald-600' : 'border-gray-700 text-gray-400'
-                              }`}
-                              placeholder="0"
-                              min="0"
-                              disabled={!ahorrador.historialPagos[mes].pagado}
-                            />
+                          </div>
+                          
+                          <div className="bg-gray-900 p-4 rounded-lg">
+                            <h3 className="text-lg font-medium text-white mb-2">Resumen Financiero</h3>
+                            <div className="space-y-2">
+                              <p className="text-gray-300">
+                                <span className="text-gray-500">Ahorro Total:</span> {formatearMoneda(ahorrador.ahorroTotal)}
+                              </p>
+                              <p className="text-gray-300">
+                                <span className="text-gray-500">Rentabilidad Anual:</span> {calcularRentabilidadAnual(ahorrador)}%
+                                {!ahorrador.incentivoPorFidelidad && (
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => restaurarIncentivo(index)}
+                                    className="ml-2 text-xs bg-emerald-900 hover:bg-emerald-800 text-emerald-300 px-2 py-0.5 rounded-full inline-flex items-center"
+                                  >
+                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                    Restaurar
+                                  </motion.button>
+                                )}
+                              </p>
+                              <p className="text-gray-300">
+                                <span className="text-gray-500">Interés Generado:</span> {formatearMoneda(interes)}
+                              </p>
+                              <p className="text-emerald-400 font-medium">
+                                <span className="text-gray-500">Saldo Total:</span> {formatearMoneda(saldoTotal)}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        
+                        <div className="bg-gray-900 p-4 rounded-lg">
+                          <h3 className="text-lg font-medium text-white mb-3">Historial de Pagos</h3>
+                          <motion.div 
+                            variants={staggerContainer}
+                            initial="hidden"
+                            animate="visible"
+                            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+                          >
+                            {Object.keys(ahorrador.historialPagos)
+                              .sort()
+                              .map((mes) => (
+                                <motion.div
+                                  key={mes}
+                                  variants={slideRight}
+                                  className={`p-3 rounded-lg border ${
+                                    ahorrador.historialPagos[mes].pagado
+                                      ? 'bg-emerald-900/30 border-emerald-700'
+                                      : 'bg-gray-800 border-gray-700'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="font-medium text-gray-300">{formatearMes(mes)}</span>
+                                    <motion.button
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      onClick={() => alternarEstadoPago(index, mes)}
+                                      className={`p-1 rounded-full ${
+                                        ahorrador.historialPagos[mes].pagado
+                                          ? 'bg-emerald-600 text-white'
+                                          : 'bg-gray-700 text-gray-400'
+                                      }`}
+                                    >
+                                      {ahorrador.historialPagos[mes].pagado ? (
+                                        <CheckCircle className="h-5 w-5" />
+                                      ) : (
+                                        <XCircle className="h-5 w-5" />
+                                      )}
+                                    </motion.button>
+                                  </div>
+                                  <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                      <DollarSign className="h-4 w-4 text-gray-500" />
+                                    </div>
+                                    <input
+                                      type="number"
+                                      value={ahorrador.historialPagos[mes].monto || 0}
+                                      onChange={(e) => actualizarMontoMes(index, mes, parseInt(e.target.value) || 0)}
+                                      className={`w-full p-2 pl-10 bg-gray-800 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                                        ahorrador.historialPagos[mes].pagado
+                                          ? 'border-emerald-600 text-white'
+                                          : 'border-gray-700 text-gray-400'
+                                      }`}
+                                      placeholder="0"
+                                      min="0"
+                                      disabled={!ahorrador.historialPagos[mes].pagado}
+                                    />
+                                  </div>
+                                </motion.div>
+                              ))}
+                          </motion.div>
+                        </div>
+                      </div>
+                    </motion.div>
                   )}
-                </div>
-              </div>
+                </AnimatePresence>
+              </motion.div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </motion.div>
 
-      {/* Modal para mostrar el voucher */}
-      {mostrarVoucher && ahorradorSeleccionado && (
-        <GenerarVoucher 
-          ahorrador={ahorradorSeleccionado} 
-          onClose={() => setMostrarVoucher(false)} 
-        />
-      )}
-    </div>
+      <AnimatePresence>
+        {mostrarVoucher && ahorradorSeleccionado && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-xl"
+            >
+              <GenerarVoucher
+                ahorrador={ahorradorSeleccionado}
+                onClose={() => setMostrarVoucher(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

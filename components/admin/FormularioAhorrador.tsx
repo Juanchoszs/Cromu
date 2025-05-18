@@ -113,11 +113,43 @@ export default function FormularioAhorrador({ ahorrador, onGuardar, onCancelar }
     return `${meses[parseInt(mes) - 1]} ${año}`;
   };
 
-  // Manejar envío del formulario
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onGuardar(form);
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const datosParaEnviar = {
+    nombre: form.nombre,
+    cedula: form.cedula,
+    fechaIngreso: form.fechaIngreso,
+    telefono: form.telefono,
+    direccion: form.direccion,
+    email: form.email,
   };
+
+  try {
+    const res = await fetch('/api/ahorradores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datosParaEnviar),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      // Mostrar el mensaje que envía el servidor
+      throw new Error(data.error || 'Error al guardar el ahorrador');
+    }
+
+    alert(`Ahorrador guardado con ID: ${data.id}`);
+
+    onGuardar({ ...form, id: data.id });
+
+  } catch (error: any) {
+    console.error('Error en handleSubmit:', error);
+    alert(`Error al guardar el ahorrador: ${error.message}`);
+  }
+};
+
+
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700 shadow-lg">
