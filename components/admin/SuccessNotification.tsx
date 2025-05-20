@@ -57,44 +57,56 @@ const SuccessNotification: React.FC<SuccessNotificationProps> = ({
     }
   };
   
-  return (
+    return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, x: 0 }}
+          animate={{ opacity: 1, x: [0, 10, -10, 0] }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className={getPositionClasses()}
+          transition={{
+            duration: 0.5,
+            ease: 'easeInOut',
+            type: 'tween', 
+          }}
         >
-          <motion.div 
+          <motion.div
             initial={{ y: 10, scale: 0.9 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: -10, scale: 0.9, opacity: 0 }}
-            transition={{ 
-              type: "spring",
+            transition={{
+              type: 'spring',
               stiffness: 300,
-              damping: 25
+              damping: 25,
             }}
-            className={`${getVariantClasses()} rounded-lg p-4 flex items-center gap-3 ${variant === 'minimal' ? 'px-5 py-3' : 'p-4'}`}
+            className={`${getVariantClasses()} rounded-lg flex items-center gap-3 ${
+              variant === 'minimal' ? 'px-5 py-3' : 'p-4'
+            }`}
           >
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
-              transition={{ 
-                type: "spring",
-                stiffness: 260,
-                damping: 20,
-                delay: 0.1
+              transition={{
+                duration: 0.5,
+                ease: 'easeInOut', // ✅ Cambiamos de 'spring' a 'tween' para la animación con keyframes
+                delay: 0.1,
+                type: 'tween',
               }}
             >
-              <CheckCircle className={`${variant === 'minimal' ? 'w-5 h-5' : 'w-10 h-10'} ${variant === 'minimal' ? 'text-white' : 'text-emerald-500'}`} />
+              <CheckCircle
+                className={`${
+                  variant === 'minimal' ? 'w-5 h-5 text-white' : 'w-10 h-10 text-emerald-500'
+                }`}
+              />
             </motion.div>
-            <motion.p 
+
+            <motion.p
               initial={{ opacity: 0, x: 5 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className={`${variant === 'minimal' ? 'text-white' : 'text-gray-800 dark:text-white'} font-medium`}
+              className={`${
+                variant === 'minimal' ? 'text-white' : 'text-gray-800 dark:text-white'
+              } font-medium`}
             >
               {message}
             </motion.p>
