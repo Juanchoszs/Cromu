@@ -1,4 +1,4 @@
-import pool from './db';
+import pool from '../db'; 
 import { v4 as uuidv4 } from 'uuid';
 
 // Interfaz para los datos del ahorrador
@@ -106,7 +106,7 @@ export async function obtenerAhorradores(): Promise<AhorradorData[]> {
     const result = await client.query(query);
     
     // Transformar los datos para que coincidan con la estructura esperada por el frontend
-    return result.rows.map(row => ({
+    return result.rows.map((row: any) => ({
       ...row,
       historialPagos: typeof row.historialPagos === 'string' 
         ? JSON.parse(row.historialPagos) 

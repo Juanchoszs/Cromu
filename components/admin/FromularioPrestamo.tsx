@@ -20,11 +20,14 @@ export interface Prestamo {
   garantia?: string;
   historialPagos?: {
     [key: string]: {
-      fecha: string;
+      estado: "pendiente" | "pagado" | "aplazado";
       monto: number;
-      tipo: "Capital" | "Interés" | "Mixto";
-      comprobante?: string;
-    }[];
+      subcuotas: {
+        numero: string;
+        estado: "pendiente" | "pagado" | "aplazado";
+        monto: number;
+      }[];
+    };
   };
 }
 
@@ -131,6 +134,11 @@ const FormularioPrestamo: React.FC<FormularioPrestamoProps> = ({
           historialPagos: form.historialPagos
         };
         
+        // Solo si es un préstamo nuevo
+        if (!form.id) {
+          form.historialPagos = inicializarHistorialPagos(form.plazoMeses, form.monto, form.tasaInteres);
+        }
+        
         let res;
         
         if (form.id) {
@@ -180,6 +188,26 @@ const FormularioPrestamo: React.FC<FormularioPrestamoProps> = ({
       }));
     }
   };
+
+  // Inicializar historial de pagos
+  function inicializarHistorialPagos(plazoMeses: number, monto: number, tasaInteres: number) {
+    // Calcula la cuota fija aproximada a miles
+    const i = tasaInteres / 100;
+    const cuota = monto * (i * Math.pow(1 + i, plazoMeses)) / (Math.pow(1 + i, plazoMeses) - 1);
+    const cuotaFija = Math.round(cuota / 1000) * 1000;
+
+    const historial: {
+      [key: string]: {
+        estado: "pendiente";
+        monto: number;
+        subcuotas: [];
+      };
+    } = {};
+    for (let i = 1; i <= plazoMeses; i++) {
+      historial[i] = { estado: "pendiente", monto: cuotaFija, subcuotas: [] };
+    }
+    return historial;
+  }
 
   return (
     <motion.div
@@ -304,7 +332,7 @@ const FormularioPrestamo: React.FC<FormularioPrestamoProps> = ({
                   className={`w-full p-2 pl-10 bg-gray-800 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-white ${
                     errores.monto ? "border-red-500" : "border-gray-600"
                   }`}
-                  placeholder="Monto en pesos"
+                  placeholder="Monto in pesos"
                 />
                 {errores.monto && (
                   <p className="text-red-500 text-xs mt-1">{errores.monto}</p>

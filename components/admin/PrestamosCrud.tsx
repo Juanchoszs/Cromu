@@ -6,6 +6,155 @@ import GenerarVoucherPrestamos from "./GenerarVoucherPrestamos";
 import { Prestamo, EstadoPrestamo } from "./FromularioPrestamo";
 import SuccessNotification from "./SuccessNotification";
 
+type EstadoCuota = "pendiente" | "pagado" | "aplazado";
+
+interface SubCuota {
+  numero: string; // Ejemplo: "3.1"
+  estado: EstadoCuota;
+  monto: number;
+}
+
+interface CuotaPago {
+  estado: EstadoCuota;
+  monto: number;
+  subcuotas: SubCuota[];
+}
+
+interface HistorialPagos {
+  [numero: string]: CuotaPago;
+}
+
+function calcularCuotaFija(monto: number, plazoMeses: number, tasaInteres: number) {
+  // Fórmula de cuota fija (sistema francés)
+  const i = tasaInteres / 100;
+  const cuota = monto * (i * Math.pow(1 + i, plazoMeses)) / (Math.pow(1 + i, plazoMeses) - 1);
+  // Aproximar a miles
+  return Math.round(cuota / 1000) * 1000;
+}
+
+// NUEVO: Manejo de historial de pagos y cuotas
+function inicializarHistorialPagos(plazoMeses: number, cuotaFija: number): HistorialPagos {
+  const historial: HistorialPagos = {};
+  for (let i = 1; i <= plazoMeses; i++) {
+    historial[i] = { estado: "pendiente", monto: cuotaFija, subcuotas: [] };
+  }
+  return historial;
+}
+
+// Cambiar estado de una cuota
+function cambiarEstadoCuota(
+  prestamo: Prestamo,
+  numeroCuota: string,
+  nuevoEstado: EstadoCuota,
+  setPrestamos: React.Dispatch<React.SetStateAction<Prestamo[]>>,
+  indexPrestamo: number
+) {
+  const nuevoHistorial = { ...prestamo.historialPagos };
+  // Si es subcuota
+  if (numeroCuota.includes(".")) {
+    const [num, sub] = numeroCuota.split(".");
+    const subcuotas = nuevoHistorial[num].subcuotas.map(sq =>
+      sq.numero === numeroCuota ? { ...sq, estado: nuevoEstado } : sq
+    );
+    nuevoHistorial[num].subcuotas = subcuotas;
+  } else {
+    // Si aplaza, crear subcuota
+    if (nuevoEstado === "aplazado") {
+      const subNumero = `${numeroCuota}.1`;
+      nuevoHistorial[numeroCuota].estado = "aplazado";
+      nuevoHistorial[numeroCuota].subcuotas.push({
+        numero: subNumero,
+        estado: "pendiente",
+        monto: Math.round(nuevoHistorial[numeroCuota].monto / 2 / 1000) * 1000,
+      });
+    } else {
+      nuevoHistorial[numeroCuota].estado = nuevoEstado;
+    }
+  }
+  // Actualizar préstamo en el array
+  setPrestamos(prev => {
+    const nuevos = [...prev];
+    nuevos[indexPrestamo] = {
+      ...nuevos[indexPrestamo],
+      historialPagos: nuevoHistorial,
+    };
+    // Opcional: persistir en backend aquí
+    return nuevos;
+  });
+}
+
+// Renderizar cuotas y subcuotas
+function CuotasPrestamo({
+  prestamo,
+  indexPrestamo,
+  setPrestamos,
+}: {
+  prestamo: Prestamo;
+  indexPrestamo: number;
+  setPrestamos: React.Dispatch<React.SetStateAction<Prestamo[]>>;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {Object.entries(prestamo.historialPagos ?? {}).map(([num, cuota]) => (
+        <div key={num} className="flex flex-col items-center">
+          <button
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2
+              ${
+                cuota.estado === "pagado"
+                  ? "bg-blue-700 text-blue-100 border-blue-400"
+                  : cuota.estado === "aplazado"
+                  ? "bg-red-700 text-red-100 border-red-400"
+                  : "bg-gray-800 text-gray-300 border-gray-600"
+              }
+            `}
+            title={`Cuota ${num}: ${cuota.estado}`}
+            onClick={() => {
+              // Ciclo de estados: pendiente -> pagado -> aplazado -> pendiente
+              const next =
+                cuota.estado === "pendiente"
+                  ? "pagado"
+                  : cuota.estado === "pagado"
+                  ? "aplazado"
+                  : "pendiente";
+              cambiarEstadoCuota(prestamo, num, next, setPrestamos, indexPrestamo);
+            }}
+          >
+            {num}
+          </button>
+          {/* Subcuotas */}
+          {cuota.subcuotas.map(sub => (
+            <button
+              key={sub.numero}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 mt-1
+                ${
+                  sub.estado === "pagado"
+                    ? "bg-blue-700 text-blue-100 border-blue-400"
+                    : sub.estado === "aplazado"
+                    ? "bg-red-700 text-red-100 border-red-400"
+                    : "bg-gray-800 text-gray-300 border-gray-600"
+                }
+              `}
+              title={`Subcuota ${sub.numero}: ${sub.estado}`}
+              onClick={() => {
+                // Ciclo de estados para subcuotas
+                const next =
+                  sub.estado === "pendiente"
+                    ? "pagado"
+                    : sub.estado === "pagado"
+                    ? "aplazado"
+                    : "pendiente";
+                cambiarEstadoCuota(prestamo, sub.numero, next, setPrestamos, indexPrestamo);
+              }}
+            >
+              {sub.numero}
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PrestamosCrud() {
   const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -146,14 +295,6 @@ export default function PrestamosCrud() {
     setMostrarFormulario(true);
   };
 
-  // Eliminar préstamo
-  const handleEliminarPrestamo = (index: number) => {
-    if (confirm("¿Estás seguro de eliminar este préstamo? Esta acción no se puede deshacer.")) {
-      const nuevosPrestamos = prestamos.filter((_, i) => i !== index);
-      setPrestamos(nuevosPrestamos);
-    }
-  };
-
   // Alternar detalles expandidos
   const alternarDetalles = (id: string) => {
     setDetallesExpandidos({
@@ -201,9 +342,9 @@ export default function PrestamosCrud() {
 
     // Crear cuotas basadas en el plazo
     for (let i = 1; i <= prestamo.plazoMeses; i++) {
-      // Verificar si hay pagos registrados para este mes
-      const pagos = prestamo.historialPagos?.[i] || [];
-      const pagada = pagos.length > 0;
+      // Verificar el estado de la cuota para este mes
+      const cuota = prestamo.historialPagos?.[i];
+      const pagada = cuota ? cuota.estado === "pagado" : false;
 
       cuotas.push({
         numero: i,
@@ -221,27 +362,16 @@ export default function PrestamosCrud() {
     setMostrarVoucher(true);
   };
 
-  // Cerrar el generador de voucher
-  const cerrarVoucher = () => {
-    setMostrarVoucher(false);
-    setPrestamoSeleccionado(null);
-  };
-
-  // Obtener color según estado del préstamo
-  const obtenerColorEstado = (estado: EstadoPrestamo) => {
-    switch (estado) {
-      case "Activo":
-        return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300";
-      case "Pagado":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      case "Refinanciado":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+  // Cerrar notificación después de un tiempo
+  useEffect(() => {
+    if (mostrarNotificacion) {
+      const timer = setTimeout(() => {
+        setMostrarNotificacion(false);
+        setPrestamoConNotificacion(null);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [mostrarNotificacion]);
 
   return (
     <div className="text-white">
@@ -270,14 +400,24 @@ export default function PrestamosCrud() {
             className="w-full p-3 pl-10 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none text-white"
           />
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="h-5 w-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
         </div>
       </div>
 
-      {/* Lista de préstamos */}
+      {/* Formulario de préstamo */}
       <AnimatePresence>
         {mostrarFormulario && (
           <FormularioPrestamo
@@ -291,13 +431,18 @@ export default function PrestamosCrud() {
         )}
       </AnimatePresence>
 
-      {/* Mostrar voucher si está activo */}
-      {mostrarVoucher && prestamoSeleccionado && (
-        <GenerarVoucherPrestamos
-          prestamo={prestamoSeleccionado}
-          onClose={cerrarVoucher}
-        />
-      )}
+      {/* Voucher de préstamo */}
+      <AnimatePresence>
+        {mostrarVoucher && prestamoSeleccionado && (
+          <GenerarVoucherPrestamos
+            prestamo={prestamoSeleccionado}
+            onClose={() => {
+              setMostrarVoucher(false);
+              setPrestamoSeleccionado(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Notificación de éxito */}
       <AnimatePresence>
@@ -310,244 +455,314 @@ export default function PrestamosCrud() {
         )}
       </AnimatePresence>
 
-      {/* Tabla de préstamos */}
-      <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-700">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Deudor
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Plazo
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-gray-800 divide-y divide-gray-700">
-              {prestamosFiltrados.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-400">
-                    No se encontraron préstamos
-                  </td>
-                </tr>
-              ) : (
-                prestamosFiltrados.map((prestamo, index) => (
-                  <React.Fragment key={prestamo.id}>
-                    <tr className="hover:bg-gray-750 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-emerald-700 rounded-full flex items-center justify-center">
-                            <User className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-white">{prestamo.nombreDeudor}</div>
-                            <div className="text-sm text-gray-400">CC: {prestamo.cedula}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-white">{formatearMoneda(prestamo.monto)}</div>
-                        <div className="text-sm text-gray-400">{prestamo.tasaInteres}% mensual</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-white">{prestamo.plazoMeses} meses</div>
-                        <div className="text-sm text-gray-400">
-                          Desembolso: {new Date(prestamo.fechaDesembolso).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${obtenerColorEstado(prestamo.estado)}`}>
-                          {prestamo.estado}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2 justify-end">
-                          <button
-                            onClick={() => editarPrestamo(index)}
-                            className="text-blue-400 hover:text-blue-300 transition-colors"
-                            title="Editar préstamo"
-                          >
-                            <Edit3 className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => eliminarPrestamo(index)}
-                            className="text-red-400 hover:text-red-300 transition-colors"
-                            title="Eliminar préstamo"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => alternarDetalles(prestamo.id)}
-                            className="text-gray-400 hover:text-white transition-colors"
-                            title="Ver detalles"
-                          >
-                            {detallesExpandidos[prestamo.id] ? (
-                              <ChevronUp className="h-5 w-5" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => generarVoucher(prestamo)}
-                            className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                            title="Generar voucher"
-                          >
-                            <Printer className="h-5 w-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {detallesExpandidos[prestamo.id] && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-4 bg-gray-750">
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                              <div className="bg-gray-700 p-3 rounded-lg">
-                                <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
-                                  <User className="h-4 w-4 mr-1 text-blue-400" />
-                                  Información de Contacto
-                                </h4>
-                                <div className="text-sm">
-                                  <p className="text-gray-300">
-                                    <span className="text-gray-400">Teléfono:</span> {prestamo.telefono}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <span className="text-gray-400">Dirección:</span> {prestamo.direccion}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="bg-gray-700 p-3 rounded-lg">
-                                <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
-                                  <Calendar className="h-4 w-4 mr-1 text-emerald-400" />
-                                  Fechas Importantes
-                                </h4>
-                                <div className="text-sm">
-                                  <p className="text-gray-300">
-                                    <span className="text-gray-400">Desembolso:</span>{" "}
-                                    {new Date(prestamo.fechaDesembolso).toLocaleDateString()}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <span className="text-gray-400">Vencimiento:</span>{" "}
-                                    {prestamo.fechaVencimiento
-                                      ? new Date(prestamo.fechaVencimiento).toLocaleDateString()
-                                      : "No definido"}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="bg-gray-700 p-3 rounded-lg">
-                                <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
-                                  <DollarSign className="h-4 w-4 mr-1 text-yellow-400" />
-                                  Detalles Financieros
-                                </h4>
-                                <div className="text-sm">
-                                  <p className="text-gray-300">
-                                    <span className="text-gray-400">Monto:</span> {formatearMoneda(prestamo.monto)}
-                                  </p>
-                                  <p className="text-gray-300">
-                                    <span className="text-gray-400">Tasa:</span> {prestamo.tasaInteres}% mensual
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
+      {/* Lista de préstamos */}
+      <div className="space-y-4">
+        {prestamosFiltrados.length === 0 ? (
+          <div className="bg-gray-800 rounded-lg p-6 text-center">
+            <p className="text-gray-400">No hay préstamos registrados</p>
+          </div>
+        ) :
+          (
+          prestamosFiltrados.map((prestamo, index) => (
+            <motion.div
+              key={prestamo.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className={`bg-gray-800 rounded-lg overflow-hidden shadow-lg ${
+                prestamoConNotificacion === prestamo.id
+                  ? "ring-2 ring-emerald-500"
+                  : ""
+              }`}
+            >
+              {/* Cabecera del préstamo */}
+              <div className="p-4 flex flex-col md:flex-row md:items-center justify-between bg-gray-700">
+                <div className="flex items-center mb-2 md:mb-0">
+                  <div
+                    className={`p-2 rounded-full mr-3 ${
+                      prestamo.estado === "Activo"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : prestamo.estado === "Pagado"
+                        ? "bg-blue-100 text-blue-700"
+                        : prestamo.estado === "Vencido"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    <DollarSign className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      {prestamo.nombreDeudor}
+                    </h3>
+                    <p className="text-sm text-gray-300">
+                      Cédula: {prestamo.cedula}
+                    </p>
+                  </div>
+                </div>
 
-                            {/* Garantía */}
-                            {prestamo.garantia && (
-                              <div className="bg-gray-700 p-3 rounded-lg mb-4">
-                                <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
-                                  <Award className="h-4 w-4 mr-1 text-purple-400" />
-                                  Garantía
-                                </h4>
-                                <p className="text-sm text-gray-300">{prestamo.garantia}</p>
-                              </div>
-                            )}
+                <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      prestamo.estado === "Activo"
+                        ? "bg-emerald-900 text-emerald-300"
+                        : prestamo.estado === "Pagado"
+                        ? "bg-blue-900 text-blue-300"
+                        : prestamo.estado === "Vencido"
+                        ? "bg-red-900 text-red-300"
+                        : "bg-yellow-900 text-yellow-300"
+                    }`}
+                  >
+                    {prestamo.estado}
+                  </span>
 
-                            {/* Estado de cuotas */}
-                            <div className="bg-gray-700 p-3 rounded-lg">
-                              <h4 className="text-sm font-medium text-gray-300 mb-2 flex items-center">
-                                <Clock className="h-4 w-4 mr-1 text-blue-400" />
-                                Estado de Cuotas
-                              </h4>
-                              <div className="flex flex-wrap gap-2">
-                                {generarCuotas(prestamo).map((cuota) => (
-                                  <div
-                                    key={`cuota-${cuota.numero}`}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                                      cuota.pagada
-                                        ? "bg-emerald-600 text-white"
-                                        : "bg-gray-600 text-gray-300"
-                                    }`}
-                                    title={`Cuota ${cuota.numero} - ${cuota.pagada ? "Pagada" : "Pendiente"}`}
-                                  >
-                                    {cuota.numero}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+                  <button
+                    onClick={() => generarVoucher(prestamo)}
+                    className="p-1 bg-gray-600 hover:bg-gray-500 rounded-md text-white transition-colors"
+                    title="Generar Voucher"
+                  >
+                    <Printer className="h-4 w-4" />
+                  </button>
 
-                            {/* Acciones adicionales */}
-                            <div className="mt-4 flex justify-end space-x-2">
-                              <button
-                                onClick={() => cambiarEstadoPrestamo(index, "Pagado")}
-                                className={`px-3 py-1 rounded-md text-xs font-medium ${
-                                  prestamo.estado === "Pagado"
-                                    ? "bg-blue-700 text-blue-200 cursor-default"
-                                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                                }`}
-                                disabled={prestamo.estado === "Pagado"}
-                              >
-                                <CheckCircle className="h-3 w-3 inline mr-1" />
-                                Marcar como Pagado
-                              </button>
-                              <button
-                                onClick={() => cambiarEstadoPrestamo(index, "Vencido")}
-                                className={`px-3 py-1 rounded-md text-xs font-medium ${
-                                  prestamo.estado === "Vencido"
-                                    ? "bg-red-700 text-red-200 cursor-default"
-                                    : "bg-red-600 hover:bg-red-700 text-white"
-                                }`}
-                                disabled={prestamo.estado === "Vencido"}
-                              >
-                                <XCircle className="h-3 w-3 inline mr-1" />
-                                Marcar como Vencido
-                              </button>
-                              <button
-                                onClick={() => cambiarEstadoPrestamo(index, "Refinanciado")}
-                                className={`px-3 py-1 rounded-md text-xs font-medium ${
-                                  prestamo.estado === "Refinanciado"
-                                    ? "bg-purple-700 text-purple-200 cursor-default"
-                                    : "bg-purple-600 hover:bg-purple-700 text-white"
-                                }`}
-                                disabled={prestamo.estado === "Refinanciado"}
-                              >
-                                <RefreshCw className="h-3 w-3 inline mr-1" />
-                                Refinanciar
-                              </button>
-                            </div>
-                          </motion.div>
-                        </td>
-                      </tr>
+                  <button
+                    onClick={() => editarPrestamo(index)}
+                    className="p-1 bg-blue-600 hover:bg-blue-700 rounded-md text-white transition-colors"
+                    title="Editar Préstamo"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    onClick={() => eliminarPrestamo(index)}
+                    className="p-1 bg-red-600 hover:bg-red-700 rounded-md text-white transition-colors"
+                    title="Eliminar Préstamo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    onClick={() => alternarDetalles(prestamo.id)}
+                    className="p-1 bg-gray-600 hover:bg-gray-500 rounded-md text-white transition-colors ml-1"
+                    title="Ver Detalles"
+                  >
+                    {detallesExpandidos[prestamo.id] ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
                     )}
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Resumen del préstamo */}
+              <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-800">
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-sm">Monto</span>
+                  <span className="text-lg font-semibold text-white">
+                    {formatearMoneda(prestamo.monto)}
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-sm">Plazo</span>
+                  <span className="text-lg font-semibold text-white">
+                    {prestamo.plazoMeses} meses
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-sm">Tasa de Interés</span>
+                  <span className="text-lg font-semibold text-white">
+                    {prestamo.tasaInteres}% mensual
+                  </span>
+                </div>
+              </div>
+
+              {/* Detalles expandibles */}
+              <AnimatePresence>
+                {detallesExpandidos[prestamo.id] && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 border-t border-gray-700 bg-gray-800">
+                      <h4 className="text-md font-semibold text-white mb-3">
+                        Información Detallada
+                      </h4>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-400 mb-2">
+                            Información del Deudor
+                          </h5>
+                          <div className="bg-gray-700 p-3 rounded-md">
+                            <div className="grid grid-cols-1 gap-2">
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">Nombre:</span>
+                                <span className="text-white font-medium">
+                                  {prestamo.nombreDeudor}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">Cédula:</span>
+                                <span className="text-white font-medium">
+                                  {prestamo.cedula}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">Teléfono:</span>
+                                <span className="text-white font-medium">
+                                  {prestamo.telefono}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">Dirección:</span>
+                                <span className="text-white font-medium">
+                                  {prestamo.direccion}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-400 mb-2">
+                            Información del Préstamo
+                          </h5>
+                          <div className="bg-gray-700 p-3 rounded-md">
+                            <div className="grid grid-cols-1 gap-2">
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">
+                                  Fecha de Desembolso:
+                                </span>
+                                <span className="text-white font-medium">
+                                  {new Date(
+                                    prestamo.fechaDesembolso
+                                  ).toLocaleDateString("es-ES")}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">
+                                  Fecha de Vencimiento:
+                                </span>
+                                <span className="text-white font-medium">
+                                  {prestamo.fechaVencimiento
+                                    ? new Date(
+                                        prestamo.fechaVencimiento
+                                      ).toLocaleDateString("es-ES")
+                                    : "No definida"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">Garantía:</span>
+                                <span className="text-white font-medium">
+                                  {prestamo.garantia || "No especificada"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-300">Estado:</span>
+                                <span
+                                  className={`font-medium ${
+                                    prestamo.estado === "Activo"
+                                      ? "text-emerald-400"
+                                      : prestamo.estado === "Pagado"
+                                      ? "text-blue-400"
+                                      : prestamo.estado === "Vencido"
+                                      ? "text-red-400"
+                                      : "text-yellow-400"
+                                  }`}
+                                >
+                                  {prestamo.estado}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Estado de cuotas */}
+                      <div className="mt-4">
+                        <h5 className="text-sm font-medium text-gray-400 mb-2">
+                          Estado de Cuotas
+                        </h5>
+                        <div className="bg-gray-700 p-3 rounded-md">
+                          <CuotasPrestamo
+                            prestamo={prestamo}
+                            indexPrestamo={index}
+                            setPrestamos={setPrestamos}
+                          />
+                          {/* Mostrar valor de cuota fija */}
+                          <div className="mt-2 text-xs text-gray-300">
+                            Valor cuota fija:{" "}
+                            <span className="font-bold text-emerald-300">
+                              {formatearMoneda(
+                                calcularCuotaFija(
+                                  prestamo.monto,
+                                  prestamo.plazoMeses,
+                                  prestamo.tasaInteres
+                                )
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Acciones adicionales */}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => cambiarEstadoPrestamo(index, "Activo")}
+                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                            prestamo.estado === "Activo"
+                              ? "bg-emerald-700 text-emerald-200"
+                              : "bg-gray-700 text-gray-300 hover:bg-emerald-900 hover:text-emerald-200"
+                          } transition-colors`}
+                        >
+                          Marcar como Activo
+                        </button>
+                        <button
+                          onClick={() => cambiarEstadoPrestamo(index, "Pagado")}
+                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                            prestamo.estado === "Pagado"
+                              ? "bg-blue-700 text-blue-200"
+                              : "bg-gray-700 text-gray-300 hover:bg-blue-900 hover:text-blue-200"
+                          } transition-colors`}
+                        >
+                          Marcar como Pagado
+                        </button>
+                        <button
+                          onClick={() => cambiarEstadoPrestamo(index, "Vencido")}
+                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                            prestamo.estado === "Vencido"
+                              ? "bg-red-700 text-red-200"
+                              : "bg-gray-700 text-gray-300 hover:bg-red-900 hover:text-red-200"
+                          } transition-colors`}
+                        >
+                          Marcar como Vencido
+                        </button>
+                        <button
+                          onClick={() =>
+                            cambiarEstadoPrestamo(index, "Refinanciado")
+                          }
+                          className={`px-3 py-1 rounded-md text-xs font-medium ${
+                            prestamo.estado === "Refinanciado"
+                              ? "bg-yellow-700 text-yellow-200"
+                              : "bg-gray-700 text-gray-300 hover:bg-yellow-900 hover:text-yellow-200"
+                          } transition-colors`}
+                        >
+                          Marcar como Refinanciado
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -38,40 +38,41 @@ const generarTablaAmortizacion = (prestamo: Prestamo) => {
   const tasaMensual = prestamo.tasaInteres / 100;
   const plazo = prestamo.plazoMeses;
   const cuotaMensual = calcularCuotaMensual(prestamo);
-  
+
   const tabla = [];
   let saldoPendiente = monto;
-  
+
   for (let mes = 1; mes <= plazo; mes++) {
     const interesMes = saldoPendiente * tasaMensual;
     const abonoCapital = cuotaMensual - interesMes;
     saldoPendiente -= abonoCapital;
-    
-    // Verificar si hay pagos registrados para este mes
-    const pagos = prestamo.historialPagos?.[mes] || [];
-    const pagado = pagos.length > 0;
-    
-    // Determinar estado de la cuota
+
+    // Leer estado real de la cuota desde historialPagos
     let estado = "Pendiente";
     let fechaPago = "";
-    
-    if (pagado) {
-      estado = "Pagado";
-      // Usar la fecha del primer pago registrado
-      fechaPago = new Date(pagos[0].fecha).toLocaleDateString('es-ES');
+
+    const cuotaHistorial = prestamo.historialPagos?.[mes];
+    if (cuotaHistorial) {
+      if (cuotaHistorial.estado === "pagado") {
+        estado = "Pagado";
+      } else if (cuotaHistorial.estado === "aplazado") {
+        estado = "Aplazado";
+      } else {
+        estado = "Pendiente";
+      }
     } else {
       // Calcular si está vencida
       const fechaDesembolso = new Date(prestamo.fechaDesembolso);
       const fechaVencimientoCuota = new Date(fechaDesembolso);
       fechaVencimientoCuota.setMonth(fechaDesembolso.getMonth() + mes);
-      
+
       if (fechaVencimientoCuota < new Date()) {
         estado = "Vencido";
       }
     }
-    
+
     tabla.push({
-      mes,
+      mes: mes.toString(),
       cuota: cuotaMensual,
       interes: interesMes,
       abonoCapital,
@@ -79,8 +80,28 @@ const generarTablaAmortizacion = (prestamo: Prestamo) => {
       estado,
       fechaPago
     });
+
+    // Si hay subcuotas, agrégalas como filas adicionales
+    if (cuotaHistorial && Array.isArray(cuotaHistorial.subcuotas)) {
+      cuotaHistorial.subcuotas.forEach((sub, idx) => {
+        tabla.push({
+          mes: `${mes}.${idx + 1}`,
+          cuota: sub.monto,
+          interes: 0, // Puedes calcular el interés real si lo necesitas
+          abonoCapital: sub.monto,
+          saldo: saldoPendiente < 0 ? 0 : saldoPendiente,
+          estado:
+            sub.estado === "pagado"
+              ? "Pagado"
+              : sub.estado === "aplazado"
+              ? "Aplazado"
+              : "Pendiente",
+          fechaPago: "", // Si tienes fecha de pago, agrégala aquí
+        });
+      });
+    }
   }
-  
+
   return tabla;
 };
 
