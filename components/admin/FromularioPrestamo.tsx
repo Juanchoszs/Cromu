@@ -110,16 +110,58 @@ const FormularioPrestamo: React.FC<FormularioPrestamoProps> = ({
   };
 
   // Manejar el envío del formulario
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validarFormulario()) {
-      // Asignar un ID si es un nuevo préstamo
-      if (!form.id) {
-        form.id = Date.now().toString();
+      try {
+        // Preparar datos para enviar a la API
+        const datosParaEnviar = {
+          nombreDeudor: form.nombreDeudor,
+          cedula: form.cedula,
+          telefono: form.telefono,
+          direccion: form.direccion,
+          monto: form.monto,
+          plazoMeses: form.plazoMeses,
+          tasaInteres: form.tasaInteres,
+          fechaDesembolso: form.fechaDesembolso,
+          fechaVencimiento: form.fechaVencimiento,
+          estado: form.estado,
+          garantia: form.garantia,
+          historialPagos: form.historialPagos
+        };
+        
+        let res;
+        
+        if (form.id) {
+          // Actualizar préstamo existente
+          res = await fetch(`/api/prestamos?id=${form.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosParaEnviar),
+          });
+        } else {
+          // Crear nuevo préstamo
+          res = await fetch('/api/prestamos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datosParaEnviar),
+          });
+        }
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || 'Error al guardar el préstamo');
+        }
+        
+        // Si todo salió bien, guardar el préstamo con el ID asignado
+        onGuardar({ ...form, id: data.id });
+        
+      } catch (error: any) {
+        console.error('Error en handleSubmit:', error);
+        alert(`Error al guardar el préstamo: ${error.message}`);
       }
-      
-      onGuardar(form);
     }
   };
 
