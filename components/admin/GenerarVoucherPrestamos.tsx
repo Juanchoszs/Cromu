@@ -45,7 +45,12 @@ const generarTablaAmortizacion = (prestamo: Prestamo) => {
   for (let mes = 1; mes <= plazo; mes++) {
     const interesMes = saldoPendiente * tasaMensual;
     const abonoCapital = cuotaMensual - interesMes;
-    saldoPendiente -= abonoCapital;
+    let cuotaOriginal = {
+      cuota: Math.ceil(cuotaMensual / 1000) * 1000,
+      interes: Math.ceil(interesMes / 1000) * 1000,
+      abonoCapital: Math.ceil(abonoCapital / 1000) * 1000,
+      saldo: Math.ceil((saldoPendiente - abonoCapital < 0 ? 0 : saldoPendiente - abonoCapital) / 1000) * 1000,
+    };
 
     // Leer estado real de la cuota desde historialPagos
     let estado = "Pendiente";
@@ -55,6 +60,9 @@ const generarTablaAmortizacion = (prestamo: Prestamo) => {
     if (cuotaHistorial) {
       if (cuotaHistorial.estado === "pagado") {
         estado = "Pagado";
+        fechaPago = cuotaHistorial.fecha_pago
+          ? new Date(cuotaHistorial.fecha_pago).toLocaleDateString("es-ES")
+          : "";
       } else if (cuotaHistorial.estado === "aplazado") {
         estado = "Aplazado";
       } else {
@@ -71,34 +79,97 @@ const generarTablaAmortizacion = (prestamo: Prestamo) => {
       }
     }
 
-    tabla.push({
-      mes: mes.toString(),
-      cuota: cuotaMensual,
-      interes: interesMes,
-      abonoCapital,
-      saldo: saldoPendiente < 0 ? 0 : saldoPendiente,
-      estado,
-      fechaPago
-    });
-
-    // Si hay subcuotas, agrégalas como filas adicionales
-    if (cuotaHistorial && Array.isArray(cuotaHistorial.subcuotas)) {
-      cuotaHistorial.subcuotas.forEach((sub, idx) => {
-        tabla.push({
-          mes: `${mes}.${idx + 1}`,
-          cuota: sub.monto,
-          interes: 0, // Puedes calcular el interés real si lo necesitas
-          abonoCapital: sub.monto,
-          saldo: saldoPendiente < 0 ? 0 : saldoPendiente,
-          estado:
-            sub.estado === "pagado"
-              ? "Pagado"
-              : sub.estado === "aplazado"
-              ? "Aplazado"
-              : "Pendiente",
-          fechaPago: "", // Si tienes fecha de pago, agrégala aquí
-        });
+    // Si la cuota está aplazada, pushea todo en 0
+    if (estado === "Aplazado") {
+      tabla.push({
+        mes: mes.toString(),
+        cuota: 0,
+        interes: 0,
+        abonoCapital: 0,
+        saldo: Math.ceil((saldoPendiente < 0 ? 0 : saldoPendiente) / 1000) * 1000,
+        estado,
+        fechaPago
       });
+
+      // Si hay subcuotas, la primera toma los valores originales
+      if (cuotaHistorial && Array.isArray(cuotaHistorial.subcuotas)) {
+        cuotaHistorial.subcuotas.forEach((sub, idx) => {
+          let subCuotaValores;
+          if (idx === 0) {
+            // La primera subcuota toma los valores originales
+            subCuotaValores = {
+              cuota: cuotaOriginal.cuota,
+              interes: cuotaOriginal.interes,
+              abonoCapital: cuotaOriginal.abonoCapital,
+              saldo: cuotaOriginal.saldo,
+            };
+            saldoPendiente -= abonoCapital; // Solo descontar una vez
+          } else {
+            // Las siguientes subcuotas calculan normalmente
+            const interesSub = saldoPendiente * tasaMensual;
+            const abonoCapitalSub = cuotaMensual - interesSub;
+            saldoPendiente -= abonoCapitalSub;
+            subCuotaValores = {
+              cuota: Math.ceil(cuotaMensual / 1000) * 1000,
+              interes: Math.ceil(interesSub / 1000) * 1000,
+              abonoCapital: Math.ceil(abonoCapitalSub / 1000) * 1000,
+              saldo: Math.ceil((saldoPendiente < 0 ? 0 : saldoPendiente) / 1000) * 1000,
+            };
+          }
+
+          tabla.push({
+            mes: `${mes}.${idx + 1}`,
+            ...subCuotaValores,
+            estado:
+              sub.estado === "pagado"
+                ? "Pagado"
+                : sub.estado === "aplazado"
+                ? "Aplazado"
+                : "Pendiente",
+            fechaPago: sub.estado === "pagado" && sub.fecha_pago
+              ? new Date(sub.fecha_pago).toLocaleDateString("es-ES")
+              : ""
+          });
+        });
+      }
+    } else {
+      // Si no está aplazada, comportamiento normal
+      saldoPendiente -= abonoCapital;
+      tabla.push({
+        mes: mes.toString(),
+        cuota: cuotaOriginal.cuota,
+        interes: cuotaOriginal.interes,
+        abonoCapital: cuotaOriginal.abonoCapital,
+        saldo: cuotaOriginal.saldo,
+        estado,
+        fechaPago
+      });
+
+      // Subcuotas normales
+      if (cuotaHistorial && Array.isArray(cuotaHistorial.subcuotas)) {
+        cuotaHistorial.subcuotas.forEach((sub, idx) => {
+          const interesSub = saldoPendiente * tasaMensual;
+          const abonoCapitalSub = cuotaMensual - interesSub;
+          saldoPendiente -= abonoCapitalSub;
+
+          tabla.push({
+            mes: `${mes}.${idx + 1}`,
+            cuota: Math.ceil(cuotaMensual / 1000) * 1000,
+            interes: Math.ceil(interesSub / 1000) * 1000,
+            abonoCapital: Math.ceil(abonoCapitalSub / 1000) * 1000,
+            saldo: Math.ceil((saldoPendiente < 0 ? 0 : saldoPendiente) / 1000) * 1000,
+            estado:
+              sub.estado === "pagado"
+                ? "Pagado"
+                : sub.estado === "aplazado"
+                ? "Aplazado"
+                : "Pendiente",
+            fechaPago: sub.estado === "pagado" && sub.fecha_pago
+              ? new Date(sub.fecha_pago).toLocaleDateString("es-ES")
+              : ""
+          });
+        });
+      }
     }
   }
 
@@ -487,7 +558,7 @@ export default function GenerarVoucherPrestamos({ prestamo, onClose }: GenerarVo
               <div className="text-right">
                 <p className="text-sm text-gray-800">Fecha: {fechaActual}</p>
                 <p className="text-sm text-gray-800">Hora: {horaActual}</p>
-                <p className="text-sm text-gray-800">No. Comprobante: {prestamo.id.substring(0, 8).toUpperCase()}</p>
+                <p className="text-sm text-gray-800">No. Comprobante: {prestamo.id?.substring(0, 8).toUpperCase() || 'N/A'}</p>
               </div>
             </div>
             
@@ -626,6 +697,10 @@ export default function GenerarVoucherPrestamos({ prestamo, onClose }: GenerarVo
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
+                    <p className="text-sm text-gray-800 font-medium">Total A pagar:</p>
+                    <p className="font-bold text-xl text-gray-900">{formatearMoneda(totalPagado + totalPendiente)}</p>
+                  </div>
+                  <div>
                     <p className="text-sm text-gray-800 font-medium">Total Pagado:</p>
                     <p className="font-bold text-xl text-emerald-700">{formatearMoneda(totalPagado)}</p>
                   </div>
@@ -633,10 +708,7 @@ export default function GenerarVoucherPrestamos({ prestamo, onClose }: GenerarVo
                     <p className="text-sm text-gray-800 font-medium">Total Pendiente:</p>
                     <p className="font-bold text-xl text-red-600">{formatearMoneda(totalPendiente)}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-800 font-medium">Total Préstamo:</p>
-                    <p className="font-bold text-xl text-gray-900">{formatearMoneda(totalPagado + totalPendiente)}</p>
-                  </div>
+                  
                 </div>
               </div>
             </div>
