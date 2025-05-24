@@ -132,44 +132,48 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-6">{t(footerLinks, "company.title")}</h3>
             <ul className="space-y-4">
-              {t(footerLinks, "company.links").map((link, index) => (
-                <li key={index}>
-                  <Link href={link.href} className="text-gray-400 hover:text-[#50A58D] transition-all relative group">
-                    <span className="relative">
-                      {link.name}
-                      <motion.span
-                        className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#50A58D] group-hover:w-full"
-                        initial={false}
-                        transition={{ duration: 0.3 }}
-                        animate={{ width: "0%" }}
-                        whileHover={{ width: "100%" }}
-                      />
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {t(footerLinks, "company.links").map(
+                (link: { name: string; href: string }, index: number) => (
+                  <li key={index}>
+                    <Link href={link.href} className="text-gray-400 hover:text-[#50A58D] transition-all relative group">
+                      <span className="relative">
+                        {link.name}
+                        <motion.span
+                          className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#50A58D] group-hover:w-full"
+                          initial={false}
+                          transition={{ duration: 0.3 }}
+                          animate={{ width: "0%" }}
+                          whileHover={{ width: "100%" }}
+                        />
+                      </span>
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 
           <div>
             <h3 className="text-lg font-semibold mb-6">{t(footerLinks, "services.title")}</h3>
             <ul className="space-y-4">
-              {t(footerLinks, "services.links").map((link, index) => (
-                <li key={index}>
-                  <Link href={link.href} className="text-gray-400 hover:text-[#50A58D] transition-all relative group">
-                    <span className="relative">
-                      {link.name}
-                      <motion.span
-                        className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#50A58D] group-hover:w-full"
-                        initial={false}
-                        transition={{ duration: 0.3 }}
-                        animate={{ width: "0%" }}
-                        whileHover={{ width: "100%" }}
-                      />
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {t(footerLinks, "services.links").map(
+                (link: { name: string; href: string }, index: number) => (
+                  <li key={index}>
+                    <Link href={link.href} className="text-gray-400 hover:text-[#50A58D] transition-all relative group">
+                      <span className="relative">
+                        {link.name}
+                        <motion.span
+                          className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#50A58D] group-hover:w-full"
+                          initial={false}
+                          transition={{ duration: 0.3 }}
+                          animate={{ width: "0%" }}
+                          whileHover={{ width: "100%" }}
+                        />
+                      </span>
+                    </Link>
+                  </li>
+                )
+              )}
             </ul>
           </div>
 
@@ -212,24 +216,26 @@ export function Footer() {
               })()}
             </p>
             <div className="flex space-x-6">
-              {t(footerLinks, "legal.links").map((link, index) => (
-                <Link
-                  key={index}
-                  href={link.href}
-                  className="text-gray-500 hover:text-[#50A58D] text-sm transition-all relative group"
-                >
-                  <span className="relative">
-                    {link.name}
-                    <motion.span
-                      className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#50A58D] group-hover:w-full"
-                      initial={false}
-                      transition={{ duration: 0.3 }}
-                      animate={{ width: "0%" }}
-                      whileHover={{ width: "100%" }}
-                    />
-                  </span>
-                </Link>
-              ))}
+              {t(footerLinks, "legal.links").map(
+                (link: { name: string; href: string }, index: number) => (
+                  <Link
+                    key={index}
+                    href={link.href}
+                    className="text-gray-500 hover:text-[#50A58D] text-sm transition-all relative group"
+                  >
+                    <span className="relative">
+                      {link.name}
+                      <motion.span
+                        className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#50A58D] group-hover:w-full"
+                        initial={false}
+                        transition={{ duration: 0.3 }}
+                        animate={{ width: "0%" }}
+                        whileHover={{ width: "100%" }}
+                      />
+                    </span>
+                  </Link>
+                )
+              )}
             </div>
           </div>
         </div>
