@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Lock, User, ArrowRight, Wallet, HelpCircle, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Login() {
   const { language, t } = useLanguage(); // Se mantiene el idioma desde el contexto
@@ -86,10 +87,8 @@ export default function Login() {
         throw new Error(data.error || t(translations).loginError);
       }
 
-      // Save cedula to sessionStorage for regular users
-      if (!data.isAdmin) {
-        sessionStorage.setItem("cedulaAhorrador", formData.cedula);
-      }
+      // Guardar el token en localStorage
+      localStorage.setItem('token', data.token);
 
       // Redirigir según el tipo de usuario
       if (data.isAdmin) {
@@ -203,25 +202,14 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="text-right">
-                <a
-                  href="/recuperar-contraseña"
-                  className="text-sm text-emerald-700 dark:text-emerald-400 hover:underline"
-                >
-                  {t(translations).forgotPassword}
-                </a>
-              </div>
-
-              <button
+              <Button
                 type="submit"
+                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-4 py-3 rounded-md transition-all duration-300 flex items-center justify-center"
                 disabled={isSubmitting}
-                className={`w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium px-4 py-3 rounded-md transition-all duration-300 flex items-center justify-center ${
-                  isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-                }`}
               >
                 {isSubmitting ? t(translations).loggingIn : t(translations).login}
                 {!isSubmitting && <ArrowRight className="ml-2 h-5 w-5" />}
-              </button>
+              </Button>
             </form>
 
             <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

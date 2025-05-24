@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { Pool } from "pg";
+import { generateToken } from "@/lib/jwt";
 
 // Conexión a PostgreSQL usando Neon
 const pool = new Pool({
@@ -24,8 +25,13 @@ export async function POST(req: Request) {
 
     // Validación manual para administrador
     if (cedula === "CromuAdmin" && password === "CromuAdministracion#") {
+      const token = generateToken({ cedula, isAdmin: true });
       return NextResponse.json(
-        { message: "Inicio de sesión exitoso.", isAdmin: true },
+        { 
+          message: "Inicio de sesión exitoso.", 
+          isAdmin: true,
+          token 
+        },
         { status: 200 }
       );
     }
@@ -48,9 +54,15 @@ export async function POST(req: Request) {
       );
     }
 
-    // Usuario normal
+    // Generar token para usuario normal
+    const token = generateToken({ cedula, isAdmin: false });
+
     return NextResponse.json(
-      { message: "Inicio de sesión exitoso.", isAdmin: false },
+      { 
+        message: "Inicio de sesión exitoso.", 
+        isAdmin: false,
+        token 
+      },
       { status: 200 }
     );
   } catch (error) {

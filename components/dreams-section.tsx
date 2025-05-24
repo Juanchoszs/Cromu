@@ -13,7 +13,7 @@ export default function DreamsSection() {
       {/* Imagen de fondo - Mejor posicionamiento para móvil */}
       <div className="absolute inset-0">
         <Image
-          src="image24.webp"
+          src="/image24.webp"
           alt="Background"
           fill
           className="object-cover object-center"
