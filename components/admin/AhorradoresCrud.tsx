@@ -55,30 +55,35 @@ export default function AhorradoresCrud() {
   const [mostrarInfoFidelidad, setMostrarInfoFidelidad] = useState(false);
   const [mostrarVoucher, setMostrarVoucher] = useState(false);
   const [ahorradorSeleccionado, setAhorradorSeleccionado] = useState<Ahorrador | null>(null);
+  const [cargando, setCargando] = useState(false);
   
   // Estados para la notificación de éxito
   const [mostrarNotificacion, setMostrarNotificacion] = useState(false);
   const [mensajeNotificacion, setMensajeNotificacion] = useState("");
   const [ahorradorConNotificacion, setAhorradorConNotificacion] = useState<string | null>(null);
   
-  // Cargar datos del localStorage al iniciar
+  // Cargar datos de la base de datos al iniciar
   useEffect(() => {
-    const savedData = localStorage.getItem('ahorradores');
-    if (savedData) {
-      try {
-        setAhorradores(JSON.parse(savedData));
-      } catch (e) {
-        console.error("Error al cargar datos guardados:", e);
-      }
-    }
+    cargarAhorradores();
   }, []);
 
-  // Guardar en localStorage cuando cambian los ahorradores
-  useEffect(() => {
-    if (ahorradores.length > 0) {
-      localStorage.setItem('ahorradores', JSON.stringify(ahorradores));
+  // Función para cargar ahorradores desde la API
+  const cargarAhorradores = async () => {
+    try {
+      setCargando(true);
+      const response = await fetch('/api/ahorradores');
+      if (!response.ok) {
+        throw new Error('Error al cargar ahorradores');
+      }
+      const data = await response.json();
+      setAhorradores(data);
+    } catch (error) {
+      console.error('Error al cargar ahorradores:', error);
+      alert('Error al cargar los datos de ahorradores');
+    } finally {
+      setCargando(false);
     }
-  }, [ahorradores]);
+  };
 
   // Generar un ID único para cada ahorrador
   const generarId = () => {
@@ -130,8 +135,9 @@ export default function AhorradoresCrud() {
   };
 
   // Alternar el estado de pago de un mes
-  const alternarEstadoPago = (index: number, mes: string) => {
-    const ahorradorActualizado = { ...ahorradores[index] };
+  const alternarEstadoPago = async (index: number, mes: string) => {
+    const ahorrador = ahorradores[index];
+    const ahorradorActualizado = { ...ahorrador };
     ahorradorActualizado.historialPagos[mes].pagado = !ahorradorActualizado.historialPagos[mes].pagado;
     
     // Si se marca como pagado, asignar el monto mensual
@@ -156,72 +162,137 @@ export default function AhorradoresCrud() {
     // Recalcular ahorro total
     recalcularAhorroTotal(ahorradorActualizado);
     
-    // Actualizar lista de ahorradores
-    const nuevosAhorradores = [...ahorradores];
-    nuevosAhorradores[index] = ahorradorActualizado;
-    setAhorradores(nuevosAhorradores);
+    try {
+      // Actualizar en la base de datos
+      const response = await fetch(`/api/ahorradores?id=${ahorrador.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ahorradorActualizado),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar el ahorrador');
+      }
+      
+      // Actualizar estado local
+      const nuevosAhorradores = [...ahorradores];
+      nuevosAhorradores[index] = ahorradorActualizado;
+      setAhorradores(nuevosAhorradores);
+    } catch (error) {
+      console.error('Error al actualizar pago:', error);
+      alert('Error al actualizar el estado del pago');
+    }
   };
 
   // Actualizar monto de un mes específico
-  const actualizarMontoMes = (index: number, mes: string, monto: number) => {
-    const ahorradorActualizado = { ...ahorradores[index] };
+  const actualizarMontoMes = async (index: number, mes: string, monto: number) => {
+    const ahorrador = ahorradores[index];
+    const ahorradorActualizado = { ...ahorrador };
     ahorradorActualizado.historialPagos[mes].monto = monto;
     
     // Recalcular ahorro total
     recalcularAhorroTotal(ahorradorActualizado);
     
-    // Actualizar lista de ahorradores
-    const nuevosAhorradores = [...ahorradores];
-    nuevosAhorradores[index] = ahorradorActualizado;
-    setAhorradores(nuevosAhorradores);
+    try {
+      // Actualizar en la base de datos
+      const response = await fetch(`/api/ahorradores?id=${ahorrador.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ahorradorActualizado),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar el ahorrador');
+      }
+      
+      // Actualizar estado local
+      const nuevosAhorradores = [...ahorradores];
+      nuevosAhorradores[index] = ahorradorActualizado;
+      setAhorradores(nuevosAhorradores);
+    } catch (error) {
+      console.error('Error al actualizar monto:', error);
+      alert('Error al actualizar el monto');
+    }
   };
 
   // Restaurar manualmente el incentivo de fidelidad
-  const restaurarIncentivo = (index: number) => {
-    const ahorradorActualizado = { ...ahorradores[index] };
+  const restaurarIncentivo = async (index: number) => {
+    const ahorrador = ahorradores[index];
+    const ahorradorActualizado = { ...ahorrador };
     ahorradorActualizado.incentivoPorFidelidad = true;
     
-    // Actualizar lista de ahorradores
-    const nuevosAhorradores = [...ahorradores];
-    nuevosAhorradores[index] = ahorradorActualizado;
-    setAhorradores(nuevosAhorradores);
+    try {
+      // Actualizar en la base de datos
+      const response = await fetch(`/api/ahorradores?id=${ahorrador.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ahorradorActualizado),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar el ahorrador');
+      }
+      
+      // Actualizar estado local
+      const nuevosAhorradores = [...ahorradores];
+      nuevosAhorradores[index] = ahorradorActualizado;
+      setAhorradores(nuevosAhorradores);
+    } catch (error) {
+      console.error('Error al restaurar incentivo:', error);
+      alert('Error al restaurar el incentivo de fidelidad');
+    }
   };
 
   // Guardar ahorrador (recibe el ahorrador del formulario)
-  const guardarAhorrador = (ahorradorCompleto: Ahorrador) => {
-    // Asegurar que tenga ID
-    if (!ahorradorCompleto.id) {
-      ahorradorCompleto.id = generarId();
-      // Para nuevos ahorradores, activar incentivo por defecto
-      ahorradorCompleto.incentivoPorFidelidad = true;
-    }
-    
-    // Calcular pagos consecutivos y ahorro total antes de guardar
-    calcularPagosConsecutivos(ahorradorCompleto);
-    recalcularAhorroTotal(ahorradorCompleto);
-    
-    if (editandoIndex !== null) {
-      // Editar existente
-      const nuevosAhorradores = [...ahorradores];
-      nuevosAhorradores[editandoIndex] = ahorradorCompleto;
-      setAhorradores(nuevosAhorradores);
+  const guardarAhorrador = async (ahorradorCompleto: Ahorrador) => {
+    try {
+      if (editandoIndex !== null) {
+        // Editar existente
+        const response = await fetch(`/api/ahorradores?id=${ahorradorCompleto.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(ahorradorCompleto),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al actualizar el ahorrador');
+        }
+        
+        const ahorradorActualizado = await response.json();
+        
+        // Actualizar estado local
+        const nuevosAhorradores = [...ahorradores];
+        nuevosAhorradores[editandoIndex] = ahorradorActualizado;
+        setAhorradores(nuevosAhorradores);
+        
+        // Mostrar notificación de éxito para edición
+        setMensajeNotificacion("Ahorrador actualizado exitosamente");
+        setAhorradorConNotificacion(ahorradorActualizado.id);
+        setMostrarNotificacion(true);
+      } else {
+        // El nuevo ahorrador ya se guarda en FormularioAhorrador
+        // Solo necesitamos recargar la lista
+        await cargarAhorradores();
+        
+        // Mostrar notificación de éxito para nuevo ahorrador
+        setMensajeNotificacion("Ahorrador agregado exitosamente");
+        setMostrarNotificacion(true);
+      }
       
-      // Mostrar notificación de éxito para edición
-      setMensajeNotificacion("Ahorrador actualizado exitosamente");
-      setAhorradorConNotificacion(ahorradorCompleto.id);
-      setMostrarNotificacion(true);
-    } else {
-      // Agregar nuevo
-      setAhorradores([...ahorradores, ahorradorCompleto]);
-      
-      // Mostrar notificación de éxito para nuevo ahorrador
-      setMensajeNotificacion("Ahorrador agregado exitosamente");
-      setAhorradorConNotificacion(ahorradorCompleto.id);
-      setMostrarNotificacion(true);
+      setMostrarFormulario(false);
+      setEditandoIndex(null);
+    } catch (error) {
+      console.error('Error al guardar ahorrador:', error);
+      alert('Error al guardar el ahorrador');
     }
-    
-    setMostrarFormulario(false);
-    setEditandoIndex(null);
   };
 
   // Editar ahorrador
@@ -231,10 +302,28 @@ export default function AhorradoresCrud() {
   };
 
   // Eliminar ahorrador
-  const eliminarAhorrador = (index: number) => {
+  const eliminarAhorrador = async (index: number) => {
     if (confirm("¿Estás seguro de eliminar este ahorrador? Esta acción no se puede deshacer.")) {
-      const nuevosAhorradores = ahorradores.filter((_, i) => i !== index);
-      setAhorradores(nuevosAhorradores);
+      const ahorrador = ahorradores[index];
+      
+      try {
+        const response = await fetch(`/api/ahorradores?id=${ahorrador.id}`, {
+          method: 'DELETE',
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al eliminar el ahorrador');
+        }
+        
+        // Actualizar estado local
+        const nuevosAhorradores = ahorradores.filter((_, i) => i !== index);
+        setAhorradores(nuevosAhorradores);
+        
+        alert('Ahorrador eliminado exitosamente');
+      } catch (error) {
+        console.error('Error al eliminar ahorrador:', error);
+        alert('Error al eliminar el ahorrador');
+      }
     }
   };
 
@@ -319,18 +408,30 @@ export default function AhorradoresCrud() {
         className="flex justify-between items-center mb-6"
       >
         <h1 className="text-2xl font-bold text-white">Gestión de Ahorradores</h1>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => {
-            setMostrarFormulario(true);
-            setEditandoIndex(null);
-          }}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center"
-        >
-          <User className="mr-2 h-5 w-5" />
-          Nuevo Ahorrador
-        </motion.button>
+        <div className="flex space-x-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={cargarAhorradores}
+            disabled={cargando}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors flex items-center disabled:opacity-50"
+          >
+            <RefreshCw className={`mr-2 h-5 w-5 ${cargando ? 'animate-spin' : ''}`} />
+            {cargando ? 'Cargando...' : 'Actualizar'}
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setMostrarFormulario(true);
+              setEditandoIndex(null);
+            }}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center"
+          >
+            <User className="mr-2 h-5 w-5" />
+            Nuevo Ahorrador
+          </motion.button>
+        </div>
       </motion.div>
 
       <motion.div 
