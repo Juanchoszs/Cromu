@@ -6,6 +6,12 @@ import Link from "next/link"
 import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react"
 import RaisedText from "@/components/raised-text"
 
+// Definir la interfaz para los enlaces del footer
+interface FooterLink {
+  name: string;
+  href: string;
+}
+
 export function Footer() {
   const { t } = useLanguage()
 
@@ -44,7 +50,7 @@ export function Footer() {
         phone: "+123 456 7890",
         email: "info@cromu.com",
       },
-      copyright: "© 2023 CROMU. Todos los derechos reservados.",
+      copyright: " 2023 CROMU. Todos los derechos reservados.",
     },
     en: {
       company: {
@@ -80,7 +86,7 @@ export function Footer() {
         phone: "+123 456 7890",
         email: "info@cromu.com",
       },
-      copyright: "© 2023 CROMU. All rights reserved.",
+      copyright: " 2023 CROMU. All rights reserved.",
     },
   }
 
@@ -132,7 +138,7 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-6">{t(footerLinks, "company.title")}</h3>
             <ul className="space-y-4">
-              {t(footerLinks, "company.links").map((link, index) => (
+              {t(footerLinks, "company.links").map((link: FooterLink, index: number) => (
                 <li key={index}>
                   <Link href={link.href} className="text-gray-400 hover:text-[#50A58D] transition-all relative group">
                     <span className="relative">
@@ -154,7 +160,7 @@ export function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-6">{t(footerLinks, "services.title")}</h3>
             <ul className="space-y-4">
-              {t(footerLinks, "services.links").map((link, index) => (
+              {t(footerLinks, "services.links").map((link: FooterLink, index: number) => (
                 <li key={index}>
                   <Link href={link.href} className="text-gray-400 hover:text-[#50A58D] transition-all relative group">
                     <span className="relative">
@@ -212,7 +218,7 @@ export function Footer() {
               })()}
             </p>
             <div className="flex space-x-6">
-              {t(footerLinks, "legal.links").map((link, index) => (
+              {t(footerLinks, "legal.links").map((link: FooterLink, index: number) => (
                 <Link
                   key={index}
                   href={link.href}
@@ -237,4 +243,3 @@ export function Footer() {
     </footer>
   )
 }
-

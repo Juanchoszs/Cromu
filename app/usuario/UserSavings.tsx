@@ -16,7 +16,15 @@ export interface Ahorrador {
   email: string;
   ahorroTotal: number;
   pagosConsecutivos: number;
-  historialPagos: Record<string, { pagado: boolean; monto: number }>;
+  historialPagos: Record<string, { 
+    pagado: boolean; 
+    monto: number;
+    consignaciones: Array<{
+      fecha: string;
+      monto: number;
+      descripcion?: string;
+    }>;
+  }>;
   incentivoPorFidelidad: boolean;
 }
 

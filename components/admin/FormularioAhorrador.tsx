@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, DollarSign, Award, Info } from "lucide-react";
+import { Calendar, DollarSign, Award, Info, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Ahorrador } from "./AhorradoresCrud";
 
 interface FormularioAhorradorProps {
@@ -8,9 +8,16 @@ interface FormularioAhorradorProps {
   onCancelar: () => void;
 }
 
+interface Consignacion {
+  fecha: string;
+  monto: number;
+  descripcion?: string;
+}
+
 export default function FormularioAhorrador({ ahorrador, onGuardar, onCancelar }: FormularioAhorradorProps) {
   const [mesesEstado, setMesesEstado] = useState<string[]>([]);
   const [mostrarInfoFidelidad, setMostrarInfoFidelidad] = useState(false);
+  const [mesesExpandidos, setMesesExpandidos] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState<Ahorrador>({
     id: "",
     nombre: "",
@@ -66,10 +73,10 @@ export default function FormularioAhorrador({ ahorrador, onGuardar, onCancelar }
     setMesesEstado(mesesGenerados);
     
     // Inicializar el historial de pagos con los meses generados
-    const historialInicial: Record<string, { pagado: boolean; monto: number }> = {};
+    const historialInicial: Record<string, { pagado: boolean; monto: number; consignaciones: Consignacion[] }> = {};
     
     mesesGenerados.forEach(mes => {
-      historialInicial[mes] = { pagado: false, monto: 0 };
+      historialInicial[mes] = { pagado: false, monto: 0, consignaciones: [] };
     });
     
     setForm({
@@ -113,49 +120,132 @@ export default function FormularioAhorrador({ ahorrador, onGuardar, onCancelar }
     return `${meses[parseInt(mes) - 1]} ${año}`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const agregarConsignacion = (mes: string) => {
+    const historialActualizado = { ...form.historialPagos };
+    const nuevaConsignacion: Consignacion = {
+      fecha: '',
+      monto: 0,
+      descripcion: ''
+    };
+    historialActualizado[mes].consignaciones.push(nuevaConsignacion);
+    
+    setForm({
+      ...form,
+      historialPagos: historialActualizado
+    });
+  };
 
-  try {
-    if (ahorrador) {
-      // Editando ahorrador existente
-      onGuardar(form);
-    } else {
-      // Creando nuevo ahorrador
-      const datosParaEnviar = {
-        nombre: form.nombre,
-        cedula: form.cedula,
-        fechaIngreso: form.fechaIngreso,
-        telefono: form.telefono,
-        direccion: form.direccion,
-        email: form.email,
-        ahorroTotal: 0,
-        pagosConsecutivos: 0,
-        historialPagos: form.historialPagos,
-        incentivoPorFidelidad: true
-      };
-
-      const res = await fetch('/api/ahorradores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosParaEnviar),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al guardar el ahorrador');
-      }
-
-      onGuardar({ ...form, id: data.id });
+  const actualizarConsignacion = (mes: string, idx: number, campo: keyof Consignacion, valor: string | number) => {
+    const historialActualizado = { ...form.historialPagos };
+    const consignacionActualizada = { ...historialActualizado[mes].consignaciones[idx] };
+    
+    // Asignar el valor según el tipo de campo
+    if (campo === 'fecha' && typeof valor === 'string') {
+      consignacionActualizada.fecha = valor;
+    } else if (campo === 'monto' && typeof valor === 'number') {
+      consignacionActualizada.monto = valor;
+    } else if (campo === 'descripcion' && typeof valor === 'string') {
+      consignacionActualizada.descripcion = valor;
     }
-  } catch (error: any) {
-    console.error('Error en handleSubmit:', error);
-    alert(`Error al guardar el ahorrador: ${error.message}`);
-  }
-};
+    
+    historialActualizado[mes].consignaciones[idx] = consignacionActualizada;
+    
+    // Actualizar el monto total del mes
+    historialActualizado[mes].monto = historialActualizado[mes].consignaciones.reduce(
+      (total, consignacion) => total + consignacion.monto, 0
+    );
+    
+    setForm({
+      ...form,
+      historialPagos: historialActualizado
+    });
+  };
 
+  const eliminarConsignacion = (mes: string, idx: number) => {
+    const historialActualizado = { ...form.historialPagos };
+    historialActualizado[mes].consignaciones.splice(idx, 1);
+    
+    setForm({
+      ...form,
+      historialPagos: historialActualizado
+    });
+  };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      // Calcular el ahorro total sumando todos los montos de pagos
+      let ahorroTotal = 0;
+      let pagosConsecutivos = 0;
+      
+      // Ordenar los meses cronológicamente
+      const mesesOrdenados = Object.keys(form.historialPagos).sort();
+      
+      // Contar pagos consecutivos y calcular ahorro total
+      for (const mes of mesesOrdenados) {
+        if (form.historialPagos[mes].pagado) {
+          ahorroTotal += form.historialPagos[mes].monto;
+          pagosConsecutivos++;
+        } else {
+          // Si hay un mes no pagado, se rompe la consecutividad
+          pagosConsecutivos = 0;
+        }
+      }
+      
+      // Crear objeto con datos actualizados
+      const datosActualizados = {
+        ...form,
+        ahorroTotal,
+        pagosConsecutivos
+      };
+      
+      if (ahorrador) {
+        // Editando ahorrador existente
+        onGuardar(datosActualizados);
+      } else {
+        // Creando nuevo ahorrador
+        const datosParaEnviar = {
+          nombre: form.nombre,
+          cedula: form.cedula,
+          fechaIngreso: form.fechaIngreso,
+          telefono: form.telefono,
+          direccion: form.direccion,
+          email: form.email,
+          ahorroTotal,
+          pagosConsecutivos,
+          historialPagos: form.historialPagos,
+          incentivoPorFidelidad: true
+        };
+
+        const res = await fetch('/api/ahorradores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datosParaEnviar),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Error al guardar el ahorrador');
+        }
+
+        onGuardar({ ...datosActualizados, id: data.id });
+      }
+    } catch (error: any) {
+      console.error('Error en handleSubmit:', error);
+      alert(`Error al guardar el ahorrador: ${error.message}`);
+    }
+  };
+
+  const formatearMoneda = (monto: number) => {
+    return new Intl.NumberFormat('es-CO', { 
+      style: 'currency', 
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(monto);
+  };
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700 shadow-lg">
@@ -285,22 +375,73 @@ export default function FormularioAhorrador({ ahorrador, onGuardar, onCancelar }
                       )}
                     </button>
                   </div>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <DollarSign size={16} className="text-gray-500" />
-                    </div>
-                    <input
-                      type="number"
-                      value={form.historialPagos[mes]?.monto || 0}
-                      onChange={(e) => actualizarMontoMes(mes, e.target.value)}
-                      className={`w-full p-2 pl-10 bg-gray-900 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                        form.historialPagos[mes]?.pagado ? 'border-emerald-600' : 'border-gray-700 text-gray-400'
-                      }`}
-                      placeholder="0"
-                      min="0"
-                      disabled={!form.historialPagos[mes]?.pagado}
-                    />
-                  </div>
+                  
+                  {form.historialPagos[mes]?.pagado && (
+                    <>
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-400 mb-1">Monto Total: <span className="font-semibold text-emerald-400">{formatearMoneda(form.historialPagos[mes]?.monto || 0)}</span></p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-sm font-medium text-emerald-400">Consignaciones</h4>
+                          <button
+                            type="button"
+                            onClick={() => agregarConsignacion(mes)}
+                            className="text-xs bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-1 rounded flex items-center"
+                          >
+                            <Plus size={12} className="mr-1" /> Agregar
+                          </button>
+                        </div>
+                        
+                        {(form.historialPagos[mes]?.consignaciones || []).length === 0 ? (
+                          <p className="text-sm text-gray-500 italic">No hay consignaciones registradas</p>
+                        ) : (
+                          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                            {(form.historialPagos[mes]?.consignaciones || []).map((consignacion, idx) => (
+                              <div key={idx} className="bg-gray-800 p-2 rounded border border-gray-700 flex flex-col">
+                                <div className="flex justify-between items-center mb-2">
+                                  <input
+                                    type="date"
+                                    value={consignacion.fecha}
+                                    onChange={(e) => actualizarConsignacion(mes, idx, 'fecha', e.target.value)}
+                                    className="bg-gray-900 border border-gray-700 rounded p-1 text-sm text-white"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => eliminarConsignacion(mes, idx)}
+                                    className="text-red-500 hover:text-red-400"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                                <div className="relative mb-2">
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <DollarSign size={14} className="text-gray-500" />
+                                  </div>
+                                  <input
+                                    type="number"
+                                    value={consignacion.monto}
+                                    onChange={(e) => actualizarConsignacion(mes, idx, 'monto', parseInt(e.target.value) || 0)}
+                                    className="w-full p-1 pl-8 bg-gray-900 border border-gray-700 rounded text-white text-sm"
+                                    placeholder="Monto"
+                                    min="0"
+                                  />
+                                </div>
+                                <input
+                                  type="text"
+                                  value={consignacion.descripcion || ''}
+                                  onChange={(e) => actualizarConsignacion(mes, idx, 'descripcion', e.target.value)}
+                                  className="w-full p-1 bg-gray-900 border border-gray-700 rounded text-white text-sm"
+                                  placeholder="Descripción (opcional)"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>

@@ -16,7 +16,15 @@ export interface Ahorrador {
   email: string;
   ahorroTotal: number;
   pagosConsecutivos: number;
-  historialPagos: Record<string, { pagado: boolean; monto: number }>;
+  historialPagos: Record<string, { 
+    pagado: boolean; 
+    monto: number;
+    consignaciones: Array<{
+      fecha: string;
+      monto: number;
+      descripcion?: string;
+    }>;
+  }>;
   incentivoPorFidelidad: boolean;
 }
 
@@ -375,7 +383,7 @@ export default function AhorradoresCrud() {
   // Calcular interés y saldo acumulado
   const calcularInteresYSaldo = (ahorrador: Ahorrador) => {
     const rentabilidadAnual = calcularRentabilidadAnual(ahorrador);
-    const interes = ahorrador.ahorroTotal * (rentabilidadAnual / 100);
+    const interes = Math.round(ahorrador.ahorroTotal * (rentabilidadAnual / 100));
     const saldoTotal = ahorrador.ahorroTotal + interes;
     return { interes, saldoTotal };
   };
@@ -395,6 +403,71 @@ export default function AhorradoresCrud() {
       ahorrador.email.toLowerCase().includes(terminoBusqueda)
     );
   });
+
+  // Manejar el registro de pagos
+  const registrarPago = async (index: number, mes: string, monto: number, consignaciones: Array<{fecha: string; monto: number; descripcion?: string}>) => {
+    try {
+      const ahorrador = { ...ahorradores[index] };
+      
+      // Actualizar el historial de pagos
+      const historialActualizado = { ...ahorrador.historialPagos };
+      historialActualizado[mes] = { 
+        pagado: true, 
+        monto: monto,
+        consignaciones: consignaciones || []
+      };
+      
+      // Recalcular ahorro total y pagos consecutivos
+      let ahorroTotal = 0;
+      let pagosConsecutivos = 0;
+      
+      // Ordenar los meses cronológicamente
+      const mesesOrdenados = Object.keys(historialActualizado).sort();
+      
+      // Contar pagos consecutivos y calcular ahorro total
+      for (const m of mesesOrdenados) {
+        if (historialActualizado[m].pagado) {
+          ahorroTotal += historialActualizado[m].monto;
+          pagosConsecutivos++;
+        } else {
+          // Si hay un mes no pagado, se rompe la consecutividad
+          pagosConsecutivos = 0;
+        }
+      }
+      
+      // Actualizar el ahorrador
+      const ahorradorActualizado = {
+        ...ahorrador,
+        historialPagos: historialActualizado,
+        ahorroTotal: ahorroTotal,
+        pagosConsecutivos: pagosConsecutivos
+      };
+      
+      // Enviar actualización al servidor
+      const response = await fetch(`/api/ahorradores?id=${ahorrador.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ahorradorActualizado),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar el ahorrador');
+      }
+      
+      // Actualizar estado local
+      const nuevosAhorradores = [...ahorradores];
+      nuevosAhorradores[index] = ahorradorActualizado;
+      setAhorradores(nuevosAhorradores);
+      
+      // Mostrar notificación
+      setMensajeNotificacion(`Pago registrado para ${formatearMes(mes)}`);
+      setAhorradorConNotificacion(ahorrador.id);
+      setMostrarNotificacion(true);
+    } catch (error) {
+      console.error('Error al registrar pago:', error);
+      alert('Error al registrar el pago');
+    }
+  };
 
   return (
     <motion.div 
@@ -599,32 +672,25 @@ export default function AhorradoresCrud() {
                             </div>
                           </div>
                           
-                          <div className="bg-gray-900 p-4 rounded-lg">
-                            <h3 className="text-lg font-medium text-white mb-2">Resumen Financiero</h3>
-                            <div className="space-y-2">
-                              <p className="text-gray-300">
-                                <span className="text-gray-500">Ahorro Total:</span> {formatearMoneda(ahorrador.ahorroTotal)}
-                              </p>
-                              <p className="text-gray-300">
-                                <span className="text-gray-500">Rentabilidad Anual:</span> {calcularRentabilidadAnual(ahorrador)}%
-                                {!ahorrador.incentivoPorFidelidad && (
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => restaurarIncentivo(index)}
-                                    className="ml-2 text-xs bg-emerald-900 hover:bg-emerald-800 text-emerald-300 px-2 py-0.5 rounded-full inline-flex items-center"
-                                  >
-                                    <RefreshCw className="h-3 w-3 mr-1" />
-                                    Restaurar
-                                  </motion.button>
-                                )}
-                              </p>
-                              <p className="text-gray-300">
-                                <span className="text-gray-500">Interés Generado:</span> {formatearMoneda(interes)}
-                              </p>
-                              <p className="text-emerald-400 font-medium">
-                                <span className="text-gray-500">Saldo Total:</span> {formatearMoneda(saldoTotal)}
-                              </p>
+                          <div className="bg-gray-800 rounded-lg p-4 mb-4 border border-gray-700">
+                            <h3 className="text-lg font-semibold text-emerald-400 mb-3">Resumen Financiero</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <p className="text-sm text-gray-400">Ahorro Total:</p>
+                                <p className="text-xl font-bold text-white">{formatearMoneda(ahorrador.ahorroTotal)}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-400">Rentabilidad Anual:</p>
+                                <p className="text-xl font-bold text-white">{calcularRentabilidadAnual(ahorrador)}%</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-400">Interés Generado:</p>
+                                <p className="text-xl font-bold text-white">{formatearMoneda(Math.round(ahorrador.ahorroTotal * (calcularRentabilidadAnual(ahorrador) / 100)))}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-400">Saldo Total:</p>
+                                <p className="text-xl font-bold text-white">{formatearMoneda(ahorrador.ahorroTotal + Math.round(ahorrador.ahorroTotal * (calcularRentabilidadAnual(ahorrador) / 100)))}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -685,6 +751,19 @@ export default function AhorradoresCrud() {
                                       min="0"
                                       disabled={!ahorrador.historialPagos[mes].pagado}
                                     />
+                                  </div>
+                                  <div className="mt-2">
+                                    <h4 className="text-sm font-medium text-gray-500 mb-1">Consignaciones:</h4>
+                                    <ul>
+                                      {(ahorrador.historialPagos[mes].consignaciones || []).map((consignacion, i) => (
+                                        <li key={i} className="flex items-center mb-1">
+                                          <span className="text-gray-400">{formatearFecha(consignacion.fecha)} - {formatearMoneda(consignacion.monto)}</span>
+                                          {consignacion.descripcion && (
+                                            <span className="text-gray-500 ml-2">({consignacion.descripcion})</span>
+                                          )}
+                                        </li>
+                                      ))}
+                                    </ul>
                                   </div>
                                 </motion.div>
                               ))}

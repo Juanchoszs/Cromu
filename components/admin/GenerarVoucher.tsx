@@ -11,6 +11,12 @@ interface GenerarVoucherProps {
 }
 
 const formatearMoneda = (valor: number) => {
+  // Asegurarse de que valor sea un número
+  if (isNaN(valor)) {
+    console.error('Valor no numérico en formatearMoneda:', valor);
+    return 'Error';
+  }
+  
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
@@ -27,10 +33,17 @@ const calcularRentabilidadAnual = (ahorrador: Ahorrador) => {
 
 // Calcula interés compuesto mensual y saldo total
 function calcularInteresYSaldoSimple(ahorrador: Ahorrador) {
-  const tasaAnual = 6 + (ahorrador.incentivoPorFidelidad ? 1 : 0); // 6% o 7%
-  const interesTotal = ahorrador.ahorroTotal * (tasaAnual / 100);
+  const tasaAnual = calcularRentabilidadAnual(ahorrador); // 6% o 7%
+  const interesTotal = Math.round(ahorrador.ahorroTotal * (tasaAnual / 100));
   const saldoAcumulado = ahorrador.ahorroTotal + interesTotal;
-  return { interesTotal, saldoAcumulado };
+  
+  console.log('Cálculo de interés y saldo:');
+  console.log('Ahorro Total:', ahorrador.ahorroTotal);
+  console.log('Tasa Anual:', tasaAnual, '%');
+  console.log('Interés Total:', interesTotal);
+  console.log('Saldo Acumulado:', saldoAcumulado);
+  
+  return { interesTotal, saldoAcumulado, tasaAnual };
 }
 
 
@@ -86,7 +99,7 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
   });
   
   const rentabilidadAnual = calcularRentabilidadAnual(ahorrador);
-  const { interesTotal, saldoAcumulado } = calcularInteresYSaldoSimple(ahorrador);
+  const { interesTotal, tasaAnual } = calcularInteresYSaldoSimple(ahorrador);
   
   // Referencias para los gráficos y contenedor del PDF
   const graficoAhorroRef = useRef<HTMLCanvasElement>(null);
@@ -429,53 +442,57 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
           >
             <div className="flex justify-between items-center mb-6 border-b pb-4">
               <div>
-                <h1 className="text-xl font-bold text-emerald-800">CROMU Finance Services</h1>
-                <p className="text-gray-800 text-sm">NIT: 901.234.567-8</p>
+                <h1 className="text-xl font-bold text-black">CROMU Finance Services</h1>
+                <p className="text-black text-sm">NIT: 901.234.567-8</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-800">Fecha: {fechaActual}</p>
-                <p className="text-sm text-gray-800">Hora: {horaActual}</p>
-                <p className="text-sm text-gray-800">No. Comprobante: {ahorrador.id.substring(0, 8).toUpperCase()}</p>
+                <p className="text-sm text-black">Fecha: {fechaActual}</p>
+                <p className="text-sm text-black">Hora: {horaActual}</p>
+                <p className="text-sm text-black">No. Comprobante: {ahorrador.id.substring(0, 8).toUpperCase()}</p>
               </div>
             </div>
             
             <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-2 text-gray-900">Información del Ahorrador</h3>
+              <h3 className="font-semibold text-lg mb-2 text-black">Información del Ahorrador</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-800 font-medium">Nombre:</p>
-                  <p className="font-semibold text-gray-900">{ahorrador.nombre}</p>
+                  <p className="text-sm text-black font-medium">Nombre:</p>
+                  <p className="font-semibold text-black">{ahorrador.nombre}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-800 font-medium">Cédula:</p>
-                  <p className="font-semibold text-gray-900">{ahorrador.cedula}</p>
+                  <p className="text-sm text-black font-medium">Cédula:</p>
+                  <p className="font-semibold text-black">{ahorrador.cedula}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-800 font-medium">Fecha de Ingreso:</p>
-                  <p className="font-semibold text-gray-900">{new Date(ahorrador.fechaIngreso).toLocaleDateString('es-ES')}</p>
+                  <p className="text-sm text-black font-medium">Fecha de Ingreso:</p>
+                  <p className="font-semibold text-black">{new Date(ahorrador.fechaIngreso).toLocaleDateString('es-ES')}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-800 font-medium">Teléfono:</p>
-                  <p className="font-semibold text-gray-900">{ahorrador.telefono}</p>
+                  <p className="text-sm text-black font-medium">Teléfono:</p>
+                  <p className="font-semibold text-black">{ahorrador.telefono}</p>
                 </div>
               </div>
             </div>
             
             <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-2 text-gray-900">Resumen de Ahorro</h3>
+              <h3 className="font-semibold text-lg mb-2 text-black">Resumen de Ahorro</h3>
               <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-800 font-medium">Ahorro Total:</p>
-                    <p className="font-bold text-xl text-emerald-700">{formatearMoneda(ahorrador.ahorroTotal)}</p>
+                    <p className="text-sm text-black font-medium">Ahorro Total:</p>
+                    <p className="font-bold text-xl text-black">{formatearMoneda(ahorrador.ahorroTotal)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-800 font-medium">Interés Anual:</p>
-                    <p className="font-bold text-emerald-700">{formatearMoneda(interesTotal)}</p>
+                    <p className="text-sm text-black font-medium">Interés Anual:</p>
+                    <p className="font-bold text-black">{formatearMoneda(interesTotal)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-800 font-medium">Saldo Total:</p>
-                    <p className="font-bold text-emerald-700">{formatearMoneda(saldoAcumulado)}</p>
+                    <p className="text-sm text-black font-medium">Saldo Total:</p>
+                    <p className="font-bold text-black">{formatearMoneda(Number(ahorrador.ahorroTotal) + Number(interesTotal))}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-black font-medium">Tasa de Interés Anual:</p>
+                    <p className="font-bold text-black">{tasaAnual}%</p>
                   </div>
                 </div>
               </div>
@@ -483,13 +500,13 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
             
             <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <h3 className="font-semibold text-lg mb-2 text-gray-900">Evolución del Ahorro</h3>
+                <h3 className="font-semibold text-lg mb-2 text-black">Evolución del Ahorro</h3>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 h-72">
                   <canvas ref={graficoAhorroRef}></canvas>
                 </div>
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-2 text-gray-900">Estado de Pagos</h3>
+                <h3 className="font-semibold text-lg mb-2 text-black">Estado de Pagos</h3>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 h-72">
                   <canvas ref={graficoPagosRef}></canvas>
                 </div>
@@ -497,39 +514,82 @@ export default function GenerarVoucher({ ahorrador, onClose }: GenerarVoucherPro
             </div>
             
             <div className="mb-8">
-              <h3 className="font-semibold text-lg mb-2 text-gray-900">Detalle de Pagos</h3>
+              <h3 className="font-semibold text-lg mb-2 text-black">Detalle de Pagos</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-200">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="py-2 px-4 border-b text-left text-gray-900">Mes</th>
-                      <th className="py-2 px-4 border-b text-left text-gray-900">Estado</th>
-                      <th className="py-2 px-4 border-b text-right text-gray-900">Monto</th>
+                      <th className="py-2 px-4 border-b text-left text-black">Mes</th>
+                      <th className="py-2 px-4 border-b text-left text-black">Estado</th>
+                      <th className="py-2 px-4 border-b text-right text-black">Monto Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Object.entries(ahorrador.historialPagos)
                       .sort(([mesA], [mesB]) => mesA.localeCompare(mesB))
-                      .map(([mes, { pagado, monto }]) => (
-                        <tr key={mes} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-4 text-gray-900">
-                            {mes.split('-')[1]}/{mes.split('-')[0]}
-                          </td>
-                          <td className="py-2 px-4">
-                            {pagado ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Pagado
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                Pendiente
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-2 px-4 text-right text-gray-900">
-                            {pagado ? formatearMoneda(monto) : '-'}
-                          </td>
-                        </tr>
+                      .map(([mes, { pagado, monto, consignaciones = [] }]) => (
+                        <React.Fragment key={mes}>
+                          <tr className="border-b hover:bg-gray-50">
+                            <td className="py-2 px-4 text-black">
+                              {mes.split('-')[1]}/{mes.split('-')[0]}
+                            </td>
+                            <td className="py-2 px-4">
+                              {pagado ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Pagado
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  Pendiente
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 px-4 text-right text-black">
+                              {pagado ? formatearMoneda(monto) : '-'}
+                            </td>
+                          </tr>
+                          {pagado && consignaciones && consignaciones.length > 0 && (
+                            <tr className="bg-gray-50">
+                              <td colSpan={3} className="py-2 px-4">
+                                <div className="pl-4 border-l-2 border-emerald-500">
+                                  <p className="text-sm font-medium text-gray-700 mb-1">Detalle de consignaciones:</p>
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="text-gray-600">
+                                        <th className="py-1 px-2 text-left">Fecha</th>
+                                        <th className="py-1 px-2 text-right">Monto</th>
+                                        {consignaciones.some(c => c.descripcion) && (
+                                          <th className="py-1 px-2 text-left">Descripción</th>
+                                        )}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {consignaciones.map((consignacion, idx) => (
+                                        <tr key={idx} className="border-t border-gray-200">
+                                          <td className="py-1 px-2 text-black">
+                                            {consignacion.fecha ? new Date(consignacion.fecha).toLocaleDateString('es-CO', {
+                                              year: 'numeric',
+                                              month: '2-digit',
+                                              day: '2-digit'
+                                            }) : 'Sin fecha'}
+                                          </td>
+                                          <td className="py-1 px-2 text-right text-black">
+                                            {formatearMoneda(consignacion.monto || 0)}
+                                          </td>
+                                          {consignaciones.some(c => c.descripcion) && (
+                                            <td className="py-1 px-2 text-black">
+                                              {consignacion.descripcion || '-'}
+                                            </td>
+                                          )}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))}
                   </tbody>
                 </table>
