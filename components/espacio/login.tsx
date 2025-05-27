@@ -86,6 +86,11 @@ export default function Login() {
         throw new Error(data.error || t(translations).loginError);
       }
 
+      // Save cedula to sessionStorage for regular users
+      if (!data.isAdmin) {
+        sessionStorage.setItem("cedulaAhorrador", formData.cedula);
+      }
+
       // Redirigir según el tipo de usuario
       if (data.isAdmin) {
         window.location.href = "/admin";

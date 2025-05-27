@@ -116,33 +116,39 @@ export default function FormularioAhorrador({ ahorrador, onGuardar, onCancelar }
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  const datosParaEnviar = {
-    nombre: form.nombre,
-    cedula: form.cedula,
-    fechaIngreso: form.fechaIngreso,
-    telefono: form.telefono,
-    direccion: form.direccion,
-    email: form.email,
-  };
-
   try {
-    const res = await fetch('/api/ahorradores', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datosParaEnviar),
-    });
+    if (ahorrador) {
+      // Editando ahorrador existente
+      onGuardar(form);
+    } else {
+      // Creando nuevo ahorrador
+      const datosParaEnviar = {
+        nombre: form.nombre,
+        cedula: form.cedula,
+        fechaIngreso: form.fechaIngreso,
+        telefono: form.telefono,
+        direccion: form.direccion,
+        email: form.email,
+        ahorroTotal: 0,
+        pagosConsecutivos: 0,
+        historialPagos: form.historialPagos,
+        incentivoPorFidelidad: true
+      };
 
-    const data = await res.json();
+      const res = await fetch('/api/ahorradores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosParaEnviar),
+      });
 
-    if (!res.ok) {
-      // Mostrar el mensaje que envía el servidor
-      throw new Error(data.error || 'Error al guardar el ahorrador');
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al guardar el ahorrador');
+      }
+
+      onGuardar({ ...form, id: data.id });
     }
-
-    alert(`Ahorrador guardado con ID: ${data.id}`);
-
-    onGuardar({ ...form, id: data.id });
-
   } catch (error: any) {
     console.error('Error en handleSubmit:', error);
     alert(`Error al guardar el ahorrador: ${error.message}`);

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { agregarPrestamo, obtenerPrestamos, obtenerPrestamoPorId, actualizarPrestamo, eliminarPrestamo } from '@/lib/api/prestamos';
+import { agregarPrestamo, obtenerPrestamos, obtenerPrestamoPorId, actualizarPrestamo, eliminarPrestamo, obtenerPrestamosPorCedula } from '@/lib/api/prestamos';
 
-// GET - Obtener todos los préstamos o uno específico por ID
+// GET - Obtener todos los préstamos, uno específico por ID, o por cédula
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
+    const cedula = url.searchParams.get('cedula');
     
     if (id) {
       // Obtener un préstamo específico
@@ -19,6 +20,10 @@ export async function GET(request: NextRequest) {
       }
       
       return NextResponse.json(prestamo);
+    } else if (cedula) {
+      // Obtener préstamos por cédula
+      const prestamos = await obtenerPrestamosPorCedula(cedula);
+      return NextResponse.json(prestamos);
     } else {
       // Obtener todos los préstamos
       const prestamos = await obtenerPrestamos();
